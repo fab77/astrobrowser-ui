@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>AstroBrowser</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="./deps/astroviewer/astroviewer.js"></script>
+    <script type="module" src="./javascripts/boot.js"></script>
+    <link rel="stylesheet" href="./css/style.css" />
+    <link rel="stylesheet" href="./css/panel-goto.css" />
+    <link rel="stylesheet" href="./css/panel-coordinates.css" />
+    <link rel="stylesheet" href="./css/panel-fov.css" />
+    <link rel="stylesheet" href="./css/panel-version.css" />
+
+</head>
+
+<body>
+    <!-- Restore button (shows only when minimised) -->
+    <button id="restoreBtn" title="Show Dev Panel">Dev Panel ▲</button>
+
+    <!-- Go To (RA, Dec) -->
+    <div id="panel-goto" class="stack" style="margin-top:8px;">
+        <label for="goRa">Go to (RA°, Dec°)</label>
+        <div class="row3">
+            <input id="goRa" type="number" step="0.0001" placeholder="RA 0–360">
+            <input id="goDec" type="number" step="0.0001" placeholder="Dec −90–+90">
+            <button id="btnGoTo">Go</button>
+        </div>
+    </div>
+
+    <!-- Coordinates readouts -->
+    <div id="panel-coordinates" class="stack" style="margin-top:8px;">
+        <label>Coordinates</label>
+
+        <div class="row">
+            <input id="centerCoords" class="mono" type="text" readonly value="Center: —" />
+            <button id="btnRefreshCenter" class="secondary" title="Update center coordinates">Refresh</button>
+        </div>
+
+        <div class="row">
+            <input id="hoverCoords" class="mono" type="text" readonly value="Hover: —" />
+            <span class="hint">Move the mouse over the sphere</span>
+        </div>
+    </div>
+
+
+    <div id="panel-fov" class="stack" style="margin-top:8px;">
+        <label>FoV</label>
+    </div>
+    
+    <div id="panel-version" class="stack" style="margin-top:8px;">
+        <label>Version x.y.z</label>
+    </div>
+
+    <!-- Dev panel -->
+    <div id="devpanel">
+        <!-- Hovered footprints panel -->
+        <details id="panel-hover" open style="margin-top:8px;">
+            <summary>Hovered footprints</summary>
+            <div id="hoverEmpty" class="hint">Move the mouse over the sphere…</div>
+            <div id="hoverList"></div>
+        </details>
+
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:800;">Astro-Viewer – Dev Panel</div>
+            <div class="hint">Globals: <code>AstroAPI</code> · <code>TAP</code></div>
+        </div>
+
+        <!-- HiPS controls -->
+        <div id="panel-hips" class="stack" style="margin-top:8px;">
+            <label for="hipsUrl">HiPS URL</label>
+            <div class="row">
+                <input id="hipsUrl" type="url" value="https://alasky.cds.unistra.fr/DSS/DSSColor/"
+                    placeholder="https://…/HiPS/" />
+                <button id="btnLoadHiPS">Load HiPS</button>
+            </div>
+        </div>
+
+        <!-- Inside/Outside sphere toggle -->
+        <div id="panel-controls">
+            <div class="stack" style="margin-top:8px;">
+                <label style="display:flex; align-items:center; gap:8px; user-select:none;">
+                    <input id="insideSphereChk" type="checkbox" />
+                    Inside sphere (toggle view)
+                </label>
+            </div>
+
+            <!-- Grid toggles -->
+            <div class="stack" style="margin-top:8px;">
+                <label style="display:flex; align-items:center; gap:8px; user-select:none;">
+                    <input id="healpixGridChk" type="checkbox" />
+                    Healpix grid
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; user-select:none;">
+                    <input id="equatorialGridChk" type="checkbox" />
+                    Equatorial grid
+                </label>
+            </div>
+        </div>
+
+
+        <!-- TAP -->
+        <div id="panel-tap" class="stack" style="margin-top:8px;">
+            <label for="tapUrl">TAP URL</label>
+            <div class="row">
+                <input id="tapUrl" type="url" placeholder="https://…/tap" value="https://sky.esa.int/esasky-tap/tap" />
+                <button id="btnLoadTap">Load TAP</button>
+            </div>
+        </div>
+
+        <div id="status"></div>
+
+        <!-- Datasets -->
+        <details id="datasetsPanel" open style="display:none;">
+            <summary>Datasets</summary>
+            <div class="stack">
+
+                <!-- Datasets - Catalogues -->
+                <label>Catalogues</label>
+
+                <!-- quick actions + filter -->
+                <div class="ctrlrow">
+                    <input id="catFilter" type="search" placeholder="Filter catalogues by name…" />
+                    <button id="btnShowAll" class="secondary" title="Show all filtered">Show all</button>
+                    <button id="btnHideAll" class="secondary" title="Hide all filtered">Hide all</button>
+                </div>
+
+                <!-- manager table -->
+                <div id="catTableWrap" class="scrollbox"
+                    style="max-height:220px; overflow:auto; border:1px solid #333; border-radius:10px; margin-top:6px;">
+                    <table id="catTable" class="table"></table>
+                </div>
+
+                <!-- keep your original single-select controls (optional) -->
+                <div class="row" style="margin-top:6px;">
+                    <select id="catalogues"></select>
+                    <button id="btnShowCat">Load / Show</button>
+                </div>
+                <div class="row">
+                    <label class="hint" style="display:flex; align-items:center; gap:6px; user-select:none;">
+                        <input id="catVisible" type="checkbox" checked />
+                        Visible (selected)
+                    </label>
+                    <button id="btnDeleteCat" class="secondary" title="Remove selected from engine">Delete
+                        (selected)</button>
+                </div>
+                <div class="hint">Tip: the table has its own per-row controls; the selector above is convenient for
+                    quick single actions.</div>
+
+                <!-- Datasets - Footprints -->
+                <label>Footprints / Observations</label>
+
+                <!-- quick actions + filter -->
+                <div class="ctrlrow">
+                    <input id="fpFilter" type="search" placeholder="Filter footprint sets by name…" />
+                    <button id="btnShowAllFp" class="secondary" title="Show all filtered">Show all</button>
+                    <button id="btnHideAllFp" class="secondary" title="Hide all filtered">Hide all</button>
+                </div>
+
+                <!-- manager table -->
+                <div id="fpTableWrap" class="scrollbox"
+                    style="max-height:220px; overflow:auto; border:1px solid #333; border-radius:10px; margin-top:6px;">
+                    <table id="fpTable" class="table"></table>
+                </div>
+
+                <!-- keep single-select quick controls -->
+                <div class="row" style="margin-top:6px;">
+                    <select id="footprints"></select>
+                    <button id="btnShowFp">Show</button>
+                    <button id="btnHideFp" class="secondary">Hide</button>
+                </div>
+                <div class="hint">Tip: per-row colour, visibility, and delete are available in the table above.</div>
+            </div>
+        </details>
+
+        <div style="margin-top:10px;">
+            <button id="btnCamInfo" class="secondary">Camera position</button>
+            <button id="btnTogglePanel" class="secondary">Minimise</button>
+        </div>
+    </div>
+
+    <div id="gridcoords"></div>
+    <div id="gridhpx"></div>
+
+    <canvas id="astrocanvas"></canvas>
+
+
+</body>
+
+</html>

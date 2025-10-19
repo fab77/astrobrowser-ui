@@ -1,0 +1,47 @@
+{
+  "name": "astrobrowser-ui",
+  "description": "Astrobrowser UI.",
+  "version": "2.0.0",
+  "keywords": [
+    "HiPS",
+    "HiPS cutout",
+    "HiPS visualisation",
+    "astronomy",
+    "astrophysics",
+    "science",
+    "data format",
+    "webGL",
+    "3D"
+  ],
+  "author": "Fabrizio Giordano (fab77)",
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/fab77/astrobrowser-ui#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fab77/astrobrowser-ui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fab77/astrobrowser-ui/issues",
+    "email": "fabriziogiordano77@gmail.com"
+  },
+  "type": "module",
+  "prepublishOnly": "npm run build:prod",
+  "sideEffects": false,
+  "scripts": {
+    "start": "npx http-server public"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+  },
+  "dependencies": {
+    "cross-fetch": "^3.1.5"
+  },
+  "browser": {
+    "fs": false,
+    "node:fs/promises": false,
+    "node:fs": false,
+    "fs/promises": false
+  }
+}
