@@ -11,6 +11,7 @@ export interface IAstroViewerAPI {
     goto(ra: number, dec: number, fov?: number): void;
     toggleHealpixGrid(on?: boolean): void;
     toggleEquatorialGrid(on?: boolean): void;
+    toggleInsideSphere(on?: boolean): void;
     setFoV(fov: number): void;
     getState(): AstroState;
     onStateChanged?: (cb: (s: AstroState) => void) => void; // optional subscription bridge

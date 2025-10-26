@@ -10,6 +10,7 @@ export class AstroController {
     bus.on('astro.goto', ({ ra, dec, fov }) => this.api.goto(ra, dec, fov));
     bus.on('astro.toggle.healpix', ({ on }) => this.api.toggleHealpixGrid(on));
     bus.on('astro.toggle.equatorial', ({ on }) => this.api.toggleEquatorialGrid(on));
+    bus.on('astro.toggle.insideSphere', ({ on }) => this.api.toggleInsideSphere(on));
     bus.on('astro.set.fov', ({ fov }) => this.api.setFoV(fov));
 
     // Queries

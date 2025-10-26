@@ -17,7 +17,7 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
         this.lastFov = this.getState().fov
         this.notify();
     }
-
+    
     private init(canvasDomId: string): void {
         if (this._initialised) return;
 
@@ -57,12 +57,19 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
     goto(ra: number, dec: number, fov?: number): void {
         this.viewer?.goTo(ra, dec)
     }
+
     toggleHealpixGrid(on?: boolean): void {
         this.viewer?.toggleHealpixGrid()
     }
+
     toggleEquatorialGrid(on?: boolean): void {
         this.viewer?.toggleEquatorialGrid()
     }
+
+    toggleInsideSphere(on?: boolean): void {
+        this.viewer?.toggleInsideSphere()
+    }
+
     setFoV(fov: number): void {
         throw new Error('Method not implemented.');
     }
