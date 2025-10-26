@@ -3,7 +3,7 @@
 // Minimal, stable API surface exposed by your AstroViewer wrapper
 // =========================
 
-export interface AstroState { ra: number; dec: number; fov: number }
+export interface AstroState { centralRADeg: number; centralDecDeg: number; fov: number }
 
 export interface IAstroViewerAPI {
     // init(canvasDomId: string): void;
@@ -17,11 +17,13 @@ export interface IAstroViewerAPI {
 }
 
 export interface AstroState {
-  ra: number;
-  dec: number;
+  centralRADeg: number;
+  centralDecDeg: number;
   fov: number;
   equatorialGridVisible: boolean;
   healpixGridVisible: boolean;
   insideSphere: boolean;
+  mouseRADeg: number | undefined;
+  mouseDecDeg: number | undefined;
   // add more fields if you have them
 }

@@ -27,7 +27,7 @@ export class AstroPanelGoto extends LitElement {
     const correlation = cid();
     const off = bus.on('astro.get.state:res', ({ cid, state }) => {
       if (cid !== correlation) return;           // ignore other responses
-      this.info = `Current RA=${state.ra.toFixed(2)} DEC=${state.dec.toFixed(2)} FOV=${state.fov.toFixed(2)}`;
+      this.info = `Current RA=${state.centralRADeg.toFixed(2)} DEC=${state.centralDecDeg.toFixed(2)} FOV=${state.fov.toFixed(2)}`;
       off();                                      // unsubscribe once we've handled OUR response
     });
     bus.emit('astro.get.state:req', { cid: correlation });

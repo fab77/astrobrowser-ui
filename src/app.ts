@@ -12,6 +12,7 @@ import './components/panels/astro-panel-grid';
 import './components/panels/astro-panel-inside-sphere';
 import './components/panels/astro-panel-goto';
 import './components/panels/astro-panel-fov';
+import './components/panels/astro-panel-coordinates';
 
 // (import other panels here if/when you add them)
 

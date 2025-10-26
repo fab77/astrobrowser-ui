@@ -7,6 +7,10 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
     private _initialised = false;
     private listeners = new Set<(s: AstroState) => void>();
     private lastFov;
+    private lastCentralRADeg: number | undefined;
+    private lastCentralDecDeg: number | undefined;
+    private lastMouseRADeg: number | undefined;
+    private lastMouseDecDeg: number | undefined;
 
     constructor(canvasDomId: string) {
         this.init(canvasDomId)
@@ -25,12 +29,17 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
                 const hipsUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
                 this.viewer.loadHiPS(hipsUrl);
                 this.viewer.run();
-                // this.lastFov = this.getState().fov || 0;
+
                 this.lastFov = this.viewer?.getFoV().minFoV
+                this.lastCentralRADeg = this.viewer?.getCenterCoordinates()?.astroDeg.ra
+                this.lastCentralDecDeg = this.viewer?.getCenterCoordinates()?.astroDeg.dec
+                this.lastMouseRADeg = this.viewer?.getCoordinatesFromMouse()?.astroDeg.ra
+                this.lastMouseDecDeg = this.viewer?.getCoordinatesFromMouse()?.astroDeg.dec
+
                 const canvas = document.getElementById(canvasDomId)
                 canvas?.addEventListener('cameraChanged', (ev: Event) => {
                     // console.log(ev)
-                    const { fovDeg, position, vMatrix, pMatrix, timestamp, centre } =
+                    const { fovDeg, position, vMatrix, pMatrix, timestamp, centralPoint, mouseHoverPoint } =
                         (ev as CustomEvent<CameraChangedDetail>).detail;
                     this.notifyIfChanged();
                 });
@@ -61,26 +70,32 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
 
         const center = this.viewer?.getCenterCoordinates()
         const fov = this.viewer?.getFoV().minFoV
-        
-        // if (!fov) { 
-        //     this.lastFov = 180. 
-        // } else {
-        //     this.lastFov = fov
-        // }
-
         const equatorialGridVisible = (this.viewer?.isEquatorialGridVisible() && true) ?? false
         const healpixGridVisible = (this.viewer?.isHealpixGridVisible() && true) ?? false
         const insideSphere = (this.viewer?.getInsideSphere() && true) ?? false
+        const mouseDecDeg = this.viewer?.getCoordinatesFromMouse()?.astroDeg.dec
+        const mouseRADeg = this.viewer?.getCoordinatesFromMouse()?.astroDeg.ra
 
-        if (!center || !fov) return { ra: 0, dec: 0, fov: 0, equatorialGridVisible: equatorialGridVisible, healpixGridVisible: healpixGridVisible, insideSphere: insideSphere }
+        if (!center || !fov) return {
+            centralRADeg: 0,
+            centralDecDeg: 0,
+            fov: 0,
+            equatorialGridVisible: equatorialGridVisible,
+            healpixGridVisible: healpixGridVisible,
+            insideSphere: insideSphere,
+            mouseRADeg: undefined,
+            mouseDecDeg: undefined
+        }
 
         return {
-            ra: center.astroDeg.ra,
-            dec: center.astroDeg.dec,
+            centralRADeg: center.astroDeg.ra,
+            centralDecDeg: center.astroDeg.dec,
             fov: fov,
             equatorialGridVisible: equatorialGridVisible,
             healpixGridVisible: healpixGridVisible,
-            insideSphere: insideSphere
+            insideSphere: insideSphere,
+            mouseRADeg: mouseRADeg,
+            mouseDecDeg: mouseDecDeg
         }
     }
 
@@ -98,12 +113,54 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
     }
     private notifyIfChanged() {
         const fov = this.getState().fov;
-        
+
         // Throttle: only emit if FoV actually changed (tolerance avoids spam)
         if (Number.isFinite(fov) && Math.abs(fov - this.lastFov) > 1e-3) {
             this.lastFov = fov;
             this.notify();
         }
+
+        const centralRADeg = this.getState().centralRADeg
+        const centralDecDeg = this.getState().centralDecDeg
+
+        if (centralDecDeg && centralRADeg) {
+
+            if (!this.lastCentralDecDeg) {
+                this.lastCentralDecDeg = centralDecDeg
+            }
+            if (!this.lastCentralRADeg) {
+                this.lastCentralRADeg = centralRADeg
+            }
+
+            if ((Number.isFinite(centralDecDeg) && Math.abs(centralDecDeg - this.lastCentralDecDeg) > 1e-3) ||
+                (Number.isFinite(centralRADeg) && Math.abs(centralRADeg - this.lastCentralRADeg) > 1e-3)) {
+                this.lastCentralDecDeg = centralDecDeg;
+                this.lastCentralRADeg = centralRADeg;
+                this.notify();
+            }
+        }
+
+        const mouseRADeg = this.getState().mouseRADeg
+        const mouseDecDeg = this.getState().mouseDecDeg
+
+        if (mouseRADeg && mouseDecDeg) {
+
+            if (!this.lastMouseDecDeg) {
+                this.lastMouseDecDeg = mouseDecDeg
+            }
+            if (!this.lastMouseRADeg) {
+                this.lastMouseRADeg = mouseRADeg
+            }
+
+            if ((Number.isFinite(mouseDecDeg) && Math.abs(mouseDecDeg - this.lastMouseDecDeg) > 1e-3) ||
+                (Number.isFinite(mouseRADeg) && Math.abs(mouseRADeg - this.lastMouseRADeg) > 1e-3)) {
+                this.lastMouseDecDeg = mouseDecDeg;
+                this.lastMouseRADeg = mouseRADeg;
+                this.notify();
+            }
+        }
+
+        
     }
 
 }
