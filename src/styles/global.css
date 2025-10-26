@@ -1,0 +1,13 @@
+html, body { height: 100%; margin: 0; }
+
+astro-app { display: grid; grid-template-rows: 40px 1fr; height: 100vh; }
+
+/* The WebGL canvas */
+#astrocanvas {
+  position: absolute;
+  top: 40px;
+  left: 0; right: 0; bottom: 0;
+  display: block;
+  width: 100%;
+  /* height: calc(100vh - 40px); */
+}
