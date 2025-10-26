@@ -25,6 +25,7 @@ export interface BusEvents {
   'astro.goto': { ra:number; dec:number; fov?:number };
   'astro.toggle.healpix': { on?: boolean };
   'astro.toggle.equatorial': { on?: boolean };
+  'astro.toggle.insideSphere': { on?: boolean };
   'astro.set.fov': { fov:number };
 
   // Queries
@@ -32,6 +33,6 @@ export interface BusEvents {
   'astro.get.state:res': { cid: string; state: AstroState };
 
   // Broadcast
-  'astro.state.changed': { state: unknown };
+  'astro.state.changed': { state: AstroState };
   'astro.ready': { version: string };
 }

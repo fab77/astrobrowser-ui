@@ -12,9 +12,9 @@ export class AstroNavBar extends LitElement {
       right: 0;
       height: 42px;
       background: #1e1e1e;
-  border-bottom: 1px solid #333;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-  color: #ddd;
+      border-bottom: 1px solid #333;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      color: #ddd;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -23,6 +23,7 @@ export class AstroNavBar extends LitElement {
       z-index: 10;
       font: 500 14px/1 system-ui, sans-serif;
       user-select: none;
+      opacity: 0.8
     }
 
     nav {

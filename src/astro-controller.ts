@@ -21,5 +21,9 @@ export class AstroController {
     // Broadcast
     this.api.onStateChanged?.((state) => bus.emit('astro.state.changed', { state }));
     bus.emit('astro.ready', { version: this.api.version ?? '0.0.0' });
+    
+    const state = this.api.getState();
+    bus.emit('astro.state.changed', { state });
+
   }
 }

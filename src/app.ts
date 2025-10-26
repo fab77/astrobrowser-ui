@@ -9,7 +9,10 @@ import './styles/global.css';
 import './components/panels/astro-nav-bar';
 import './components/panels/astro-panel-draggable';
 import './components/panels/astro-panel-grid';
+import './components/panels/astro-panel-inside-sphere';
 import './components/panels/astro-panel-goto';
+import './components/panels/astro-panel-fov';
+
 // (import other panels here if/when you add them)
 
 import { AstroController } from './astro-controller';
@@ -32,8 +35,8 @@ async function main() {
     //    If your adapter needs the canvas or the <astro-viewer> element, pass it here.
     //    Adjust the constructor to your actual signature.
     // const astroAPI = new AstroViewerAdapter({ canvas }); // tweak if your adapter differs
-    const astroAPI = new AstroViewerAdapter(); // tweak if your adapter differs
-    astroAPI.init(canvas.id)
+    const astroAPI = new AstroViewerAdapter(canvas.id); // tweak if your adapter differs
+    
     // 3) Mount the AstroController (handles astro.* bus commands)
     const controller = new AstroController(astroAPI);
     controller.mount();
@@ -76,6 +79,7 @@ async function main() {
         el.innerHTML = `
       <h3 slot="title" style="margin:0;font:600 13px system-ui">Settings</h3>
       <astro-panel-grid></astro-panel-grid>
+      <astro-panel-inside-sphere></astro-panel-inside-sphere>
       
     `;
         return el;

@@ -6,7 +6,7 @@
 export interface AstroState { ra: number; dec: number; fov: number }
 
 export interface IAstroViewerAPI {
-    init(canvasDomId: string): void;
+    // init(canvasDomId: string): void;
     version?: string;
     goto(ra: number, dec: number, fov?: number): void;
     toggleHealpixGrid(on?: boolean): void;
@@ -20,5 +20,8 @@ export interface AstroState {
   ra: number;
   dec: number;
   fov: number;
+  equatorialGridVisible: boolean;
+  healpixGridVisible: boolean;
+  insideSphere: boolean;
   // add more fields if you have them
 }
