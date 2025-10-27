@@ -1,5 +1,6 @@
 // src/ui/UIPanelManager.ts
-import { bus, type TabKey } from '../bus';
+import { bus } from '../bus';
+import { TabKey } from 'src/types';
 
 import { PanelRegistry } from '../services/panels/PanelRegistry';
 import '../components/panels/astro-panel-draggable';

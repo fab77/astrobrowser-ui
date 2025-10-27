@@ -1,5 +1,6 @@
-import { AstroViewer, CameraChangedDetail, PointCoordinates, addTAPRepo } from 'astroviewer';
-import { AstroState, IAstroViewerAPI } from './types';
+import { AstroViewer, CameraChangedDetail, TapRepo, addTAPRepo } from 'astroviewer';
+import { DataProvider, AstroState, IAstroViewerAPI } from './types';
+import { convertTapRepoToDataProvider } from './helpers/tap-converter';
 
 export class AstroViewerAdapter implements IAstroViewerAPI {
 
@@ -17,7 +18,7 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
         this.lastFov = this.getState().fov
         this.notify();
     }
-    
+
     private init(canvasDomId: string): void {
         if (this._initialised) return;
 
@@ -68,6 +69,12 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
 
     toggleInsideSphere(on?: boolean): void {
         this.viewer?.toggleInsideSphere()
+    }
+
+    async addTAPRepo(url: string): Promise<DataProvider> {
+        const tapRepo: TapRepo = await addTAPRepo(url)
+        const dataProvider = convertTapRepoToDataProvider(tapRepo)
+        return dataProvider
     }
 
     setFoV(fov: number): void {
@@ -139,6 +146,7 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
                 this.lastCentralRADeg = centralRADeg
             }
 
+            // Throttle: only emit if central point actually changed (tolerance avoids spam)
             if ((Number.isFinite(centralDecDeg) && Math.abs(centralDecDeg - this.lastCentralDecDeg) > 1e-3) ||
                 (Number.isFinite(centralRADeg) && Math.abs(centralRADeg - this.lastCentralRADeg) > 1e-3)) {
                 this.lastCentralDecDeg = centralDecDeg;
@@ -159,6 +167,7 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
                 this.lastMouseRADeg = mouseRADeg
             }
 
+            // Throttle: only emit if mouse hover point actually changed (tolerance avoids spam)
             if ((Number.isFinite(mouseDecDeg) && Math.abs(mouseDecDeg - this.lastMouseDecDeg) > 1e-3) ||
                 (Number.isFinite(mouseRADeg) && Math.abs(mouseRADeg - this.lastMouseRADeg) > 1e-3)) {
                 this.lastMouseDecDeg = mouseDecDeg;
@@ -167,7 +176,7 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
             }
         }
 
-        
+
     }
 
 }

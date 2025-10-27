@@ -1,6 +1,7 @@
 import { LitElement, html, css, svg } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import { bus, type TabKey } from '../../bus';
+import { bus } from '../../bus';
+import { TabKey } from 'src/types';
 
 @customElement('astro-nav-bar')
 export class AstroNavBar extends LitElement {

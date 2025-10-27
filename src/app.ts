@@ -10,9 +10,10 @@ import './components/panels/astro-nav-bar';
 import './components/panels/astro-panel-draggable';
 import './components/panels/astro-panel-grid';
 import './components/panels/astro-panel-inside-sphere';
-import './components/panels/astro-panel-goto';
 import './components/panels/astro-panel-fov';
 import './components/panels/astro-panel-coordinates';
+import './components/panels/astro-panel-tap';
+import './components/astro-panel-explore';
 
 // (import other panels here if/when you add them)
 
@@ -20,6 +21,8 @@ import { AstroController } from './astro-controller';
 import { AstroViewerAdapter } from './astroviewer-adapter'; // must implement IAstroViewerAPI
 import { UIPanelManager } from './ui/UIPanelManager';
 import { PanelRegistry } from './services/panels/PanelRegistry';
+import { initDataProviderBridge } from './bridges/dataProviderBridge';
+
 
 function assertEl<T extends Element>(el: T | null, sel: string): T {
     if (!el) throw new Error(`Missing required element: ${sel}`);
@@ -51,8 +54,8 @@ async function main() {
         const el = document.createElement('astro-panel-draggable');
         el.innerHTML = `
       <h3 slot="title" style="margin:0;font:600 13px system-ui">Explore</h3>
-      
-      <astro-panel-goto></astro-panel-goto>
+      <astro-panel-explore></astro-panel-explore>
+      <!-- <astro-panel-goto></astro-panel-goto> -->
     `;
         return el;
     });
@@ -81,6 +84,7 @@ async function main() {
       <h3 slot="title" style="margin:0;font:600 13px system-ui">Settings</h3>
       <astro-panel-grid></astro-panel-grid>
       <astro-panel-inside-sphere></astro-panel-inside-sphere>
+      <astro-panel-tap></astro-panel-tap>
       
     `;
         return el;
@@ -89,6 +93,12 @@ async function main() {
     // 5) Create & mount the UIPanelManager (enforces single-panel for core tabs)
     const ui = new UIPanelManager(workarea, registry);
     ui.mount();
+
+
+    
+    initDataProviderBridge();
+
+
 
     // 6) Optionally open a default tab panel on load (e.g., 'explore')
     // bus.emit('ui:openPanel', { tab: 'explore' as TabKey });

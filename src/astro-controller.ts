@@ -1,9 +1,9 @@
 // src/astro-controller.ts
 import { bus } from './bus';
-import type { IAstroViewerAPI } from './types';
+import type { DataProvider, IAstroViewerAPI } from './types';
 
 export class AstroController {
-  constructor(private api: IAstroViewerAPI) {}
+  constructor(private api: IAstroViewerAPI) { }
 
   mount() {
     // Commands
@@ -19,10 +19,33 @@ export class AstroController {
       bus.emit('astro.get.state:res', { cid, state });
     });
 
+    // === TAP integration (bus-only) ===
+    bus.on('astro.tap.addRepo:req', async ({ cid, url }) => {
+      try {
+        const dataProvider = await this.api.addTAPRepo(url);
+        const payload: { dataProvider: DataProvider } = {
+          dataProvider: dataProvider
+        };
+        // const payload: { catalogues: Catalogue[]; footprints: FootprintSet[] } = {
+        //   catalogues: dataProvider.catalogues ?? [],
+        //   footprints: dataProvider.footprints ?? [],
+        // };
+
+        // reply to the requester
+        bus.emit('astro.tap.addRepo:res', { cid, ok: true, payload });
+
+        // broadcast availability app-wide
+        bus.emit('tap:repoLoaded', { url, ...payload });
+      } catch (e: any) {
+        bus.emit('astro.tap.addRepo:res', { cid, ok: false, error: e?.message ?? String(e) });
+      }
+    });
+
+
     // Broadcast
     this.api.onStateChanged?.((state) => bus.emit('astro.state.changed', { state }));
     bus.emit('astro.ready', { version: this.api.version ?? '0.0.0' });
-    
+
     const state = this.api.getState();
     bus.emit('astro.state.changed', { state });
 

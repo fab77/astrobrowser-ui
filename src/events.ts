@@ -3,18 +3,14 @@
 // Central type-safe event map for PubSub between panels and AstroViewer
 // =========================
 
-import { AstroState } from "./types";
+import { AstroState, AstroTapAddRepoReqPayload, AstroTapAddRepoResPayload, Catalogue, TabKey, TapRepoLoadedPayload } from "./types";
 
-export type TabKey = 'explore' | 'analysis' | 'metadata' | 'settings';
-
-export type RA = number; // degrees
-export type DEC = number; // degrees
 
 
 export interface BusEvents {
   // plugin
   'plugin.register': { name: string; version: string };
-  'plugin.error':    { plugin: string; message: string };
+  'plugin.error': { plugin: string; message: string };
 
   // UI intent
   'ui:openPanelKey': { key: string }; // for sternal plugin
@@ -22,11 +18,17 @@ export interface BusEvents {
   'ui:closePanel': { id: string, key: string }; // opzionale
 
   // Astro commands
-  'astro.goto': { ra:number; dec:number; fov?:number };
+  'astro.goto': { ra: number; dec: number; fov?: number };
   'astro.toggle.healpix': { on?: boolean };
   'astro.toggle.equatorial': { on?: boolean };
   'astro.toggle.insideSphere': { on?: boolean };
-  'astro.set.fov': { fov:number };
+  'astro.set.fov': { fov: number };
+
+  // TAP integration
+  'astro.tap.addRepo:req': AstroTapAddRepoReqPayload;
+  'astro.tap.addRepo:res': AstroTapAddRepoResPayload;
+  'tap:repoLoaded': TapRepoLoadedPayload;
+  'tap:catalogueSelected': { repo: string, catalogue:Catalogue };
 
   // Queries
   'astro.get.state:req': { cid: string };
