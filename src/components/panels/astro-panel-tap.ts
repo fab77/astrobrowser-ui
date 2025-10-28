@@ -71,7 +71,7 @@ export class AstroPanelTap extends LitElement {
         off();
         if (msg.ok) {
           // ok === true branch has payload guaranteed by the discriminated union
-          safeResolve(msg.payload);
+          safeResolve(msg.payload); // <- here is where the dataProvider is returned
         } else {
           safeReject(new Error(msg.error ?? 'Unknown TAP add error'));
         }

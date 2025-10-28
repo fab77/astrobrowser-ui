@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import { bus } from '../../bus';
-import { Catalogue, DataProvider, Metadata, TapRepoLoadedPayload } from 'src/types';
+import { bus, cid } from '../../bus';
+import { AstroTapCatalogueLoadedResPayload, Catalogue, DataProvider, Metadata, TapRepoLoadedPayload } from 'src/types';
 import { dataProviderStore } from '../../stores/DataProviderStore';
 import '../mini-panels/astro-mini-metadata'; // <-- make sure path matches where you put it
 
@@ -91,10 +91,53 @@ export class AstroCatalogueTable extends LitElement {
     document.body.appendChild(el);
   }
 
-  private plotCatalogue(c: Catalogue) {
-    // Up to you what “plot” means. Emit an intent for your viewer/pipeline:
-    bus.emit('tap:catalogueSelected', { repo: this.dataProvider?.url, catalogue: c });
-    // bus.emit('astro.plot.catalogue', { repo: this.dataProvider?.url, catalogueId: c.id }); // implement listener in viewer
+  private _callPlotCatalogue(c: Catalogue): Promise<{ dataProvider: DataProvider, catalogue: Catalogue }> {
+    const correlation = cid();
+    return new Promise((resolve, reject) => {
+      const off = bus.on('astro.plot.catalogue:res', (msg: AstroTapCatalogueLoadedResPayload) => {
+        if (msg.cid !== correlation) return;
+        off();
+        if (msg.ok) {
+          // ok === true branch has payload guaranteed by the discriminated union
+          safeResolve(msg.payload); // <- here is where the dataProvider and catalogue are returned
+        } else {
+          safeReject(new Error(msg.error ?? 'Unknown Catalogue plot error'));
+        }
+      });
+
+      // Timeout guard
+      const t = setTimeout(() => {
+        off();
+        reject(new Error('Timeout waiting for TAP repo response'));
+      }, 15000);
+
+      // Ensure cleanup if resolved early
+      const safeResolve = (v: any) => { clearTimeout(t); resolve(v); };
+      const safeReject = (e: any) => { clearTimeout(t); reject(e); };
+
+      // Re-emit using the originals so we don't capture the wrapped ones
+      bus.emit('astro.plot.catalogue:req', { cid: correlation, dataProvider: this.dataProvider, catalogue: c });
+    });
+  }
+
+  private async _plotCatalogue(c: Catalogue) {
+    if (!c) return
+    try {
+      const { dataProvider, catalogue } = await this._callPlotCatalogue(c)
+
+      console.log(`Catalogue ${catalogue.name} loaded from ${dataProvider.url}`)
+      // DOM event for local consumers
+      this.dispatchEvent(new CustomEvent('tap:catalogueSelected', {
+        bubbles: true, composed: true,
+        detail: { repo: this.dataProvider.url, catalogues: c }
+      }));
+
+    } catch (err: any) {
+      console.error('[astro-catalogue-table] load failed:', err);
+      alert(`Failed to load Catalogue data for plot:\n${c.name}\n\n${err?.message ?? err}`);
+    } finally {
+      
+    }
   }
 
   // ---- render --------------------------------------------------------------
@@ -109,8 +152,8 @@ export class AstroCatalogueTable extends LitElement {
         />
         <div class="meta">
           ${this.dataProvider?.url
-            ? html`<span class="pill">Repo</span>${this.dataProvider.url}`
-            : html`<span class="muted">Waiting for TAP repo…</span>`}
+        ? html`<span class="pill">Repo</span>${this.dataProvider.url}`
+        : html`<span class="muted">Waiting for TAP repo…</span>`}
         </div>
       </header>
 
@@ -139,7 +182,7 @@ export class AstroCatalogueTable extends LitElement {
                   <td class="nowrap">${this.dataProvider?.url || html`<span class="muted">—</span>`}</td>
                   <td class="nowrap">
                     <button class="btn" @click=${() => this.openMetadataPanel(c)}>Show metadata</button>
-                    <button class="btn" @click=${() => this.plotCatalogue(c)}>Plot</button>
+                    <button class="btn" @click=${() => this._plotCatalogue(c)}>Plot</button>
                   </td>
                 </tr>
               `)}

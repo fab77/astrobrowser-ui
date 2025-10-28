@@ -1,7 +1,4 @@
-import CatalogueGL from "node_modules/astroviewer/lib-esm/model/catalogues/CatalogueGL"
-import FootprintSetGL from "node_modules/astroviewer/lib-esm/model/footprints/FootprintSetGL"
-import TapMetadata from "node_modules/astroviewer/lib-esm/model/tap/TapMetadata"
-import TapMetadataList from "node_modules/astroviewer/lib-esm/model/tap/TapMetadataList"
+import { CatalogueGL, FootprintSetGL, TapMetadata, TapMetadataList } from "astroviewer";
 import { ADQLFunction, TapRepo } from "node_modules/astroviewer/lib-esm/model/tap/TapRepo"
 import { Catalogue, DataProvider, DataProviderType, FootprintSet, FunctionDetails, Metadata, MetadataDetails } from "src/types"
 
@@ -89,7 +86,8 @@ function convertCatalogueGLtoCatalogue(catGL: CatalogueGL, hash: string): Catalo
         name: catGL.name,
         description: catGL.description,
         provider: catGL.tapRepo.tapBaseUrl,
-        metadataDetails: metadataList
+        metadataDetails: metadataList,
+        astroviewerGlObj: catGL
     }
 }
 
@@ -100,7 +98,8 @@ function convertFootprintSetGLtoFootprintSet(footGL: FootprintSetGL, hash: strin
         name: footGL.name,
         description: footGL.description,
         provider: footGL.tapRepo.tapBaseUrl,
-        metadataDetails: metadataList
+        metadataDetails: metadataList,
+        astroviewerGlObj: footGL
     }
 }
 

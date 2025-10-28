@@ -3,7 +3,7 @@
 // Central type-safe event map for PubSub between panels and AstroViewer
 // =========================
 
-import { AstroState, AstroTapAddRepoReqPayload, AstroTapAddRepoResPayload, Catalogue, TabKey, TapRepoLoadedPayload } from "./types";
+import { AstroState, AstroTapAddRepoReqPayload, AstroTapAddRepoResPayload, AstroTapCatalogueLoadedReqPayload, AstroTapCatalogueLoadedResPayload, Catalogue, DataProvider, TabKey, TapRepoLoadedPayload } from "./types";
 
 
 
@@ -28,7 +28,9 @@ export interface BusEvents {
   'astro.tap.addRepo:req': AstroTapAddRepoReqPayload;
   'astro.tap.addRepo:res': AstroTapAddRepoResPayload;
   'tap:repoLoaded': TapRepoLoadedPayload;
-  'tap:catalogueSelected': { repo: string, catalogue:Catalogue };
+  'tap:catalogueSelected': { dataProvider: DataProvider, catalogue: Catalogue };
+  'astro.plot.catalogue:req': AstroTapCatalogueLoadedReqPayload
+  'astro.plot.catalogue:res': AstroTapCatalogueLoadedResPayload
 
   // Queries
   'astro.get.state:req': { cid: string };
