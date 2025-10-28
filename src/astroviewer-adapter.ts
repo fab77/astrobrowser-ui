@@ -1,4 +1,4 @@
-import { AstroViewer, CameraChangedDetail, TapRepo, addTAPRepo } from 'astroviewer';
+import { AstroViewer, CameraChangedDetail, CatalogueGL, TapRepo, addTAPRepo } from 'astroviewer';
 import { DataProvider, AstroState, IAstroViewerAPI } from './types';
 import { convertTapRepoToDataProvider } from './helpers/tap-converter';
 
@@ -18,7 +18,8 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
         this.lastFov = this.getState().fov
         this.notify();
     }
-
+    
+    
     private init(canvasDomId: string): void {
         if (this._initialised) return;
 
@@ -77,9 +78,15 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
         return dataProvider
     }
 
+    async showCatalogue(catalogue: CatalogueGL): Promise<void> {
+        this.viewer?.showCatalogue(catalogue)
+    }
+
+
     setFoV(fov: number): void {
         throw new Error('Method not implemented.');
     }
+
     getState(): AstroState {
 
         const center = this.viewer?.getCenterCoordinates()
@@ -125,6 +132,7 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
         const s = this.getState();
         this.listeners.forEach(fn => fn(s));
     }
+
     private notifyIfChanged() {
         const fov = this.getState().fov;
 

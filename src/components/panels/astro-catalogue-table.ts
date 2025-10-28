@@ -1,8 +1,9 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import { bus } from '../../bus';
-import { Catalogue, DataProvider, Metadata, TapRepoLoadedPayload } from 'src/types';
+import { bus, cid } from '../../bus';
+import { AstroTapCatalogueLoadedResPayload, Catalogue, DataProvider, Metadata, TapRepoLoadedPayload } from 'src/types';
 import { dataProviderStore } from '../../stores/DataProviderStore';
+import '../mini-panels/astro-mini-metadata'; // <-- make sure path matches where you put it
 
 @customElement('astro-catalogue-table')
 export class AstroCatalogueTable extends LitElement {
@@ -21,13 +22,16 @@ export class AstroCatalogueTable extends LitElement {
     th { background:#fafafa; position:sticky; top:42px; z-index:1; }
     tbody tr:hover { background:#fcfcff; }
     .pill { display:inline-block; padding:2px 6px; border-radius:999px; background:#f2f2f2; font-size:11px; margin-right:6px; }
-    details { margin:4px 0; }
-    .cols { display:grid; grid-template-columns: 1fr auto auto auto auto; gap:8px; }
-    .cols > div { padding:2px 0; border-bottom:1px dotted #eee; }
     .muted { color:#888; }
     .subtle { font-size:12px; color:#666; }
     .nowrap { white-space:nowrap; }
     .empty { padding:18px 10px; color:#777; }
+    .btn {
+      all: unset; cursor: pointer; padding:6px 10px; border:1px solid #ddd; border-radius:8px;
+      transition: background .15s ease;
+    }
+    .btn + .btn { margin-left:6px; }
+    .btn:hover { background:#f8f8f8; }
   `;
 
   @state() private dataProvider: DataProvider = {
@@ -39,24 +43,9 @@ export class AstroCatalogueTable extends LitElement {
   };
 
   private unsubStore?: () => void;
-
   @state() private filter = '';
 
-  // ---- helpers -------------------------------------------------------------
-  private getColumns(c: Catalogue): Metadata[] {
-    // Your type uses metadataList?: MetadataDetails
-    const fromMetadataDetails = c.metadataList?.metadataList ?? [];
-    // Allow adapters to provide "columns" as a fallback
-    const fromColumns = Array.isArray((c as any).columns) ? ((c as any).columns as Metadata[]) : [];
-    return (fromMetadataDetails.length ? fromMetadataDetails : fromColumns).filter(Boolean);
-  }
-
-  private getRowCount(c: Catalogue): number | undefined {
-    const n = (c as any).nrows ?? (c as any).rows ?? (c as any).rowCount ?? (c as any).estRows;
-    return typeof n === 'number' ? n : undefined;
-  }
-
-  // ---- bus -----------------------------------------------------------------
+  // --- hydrate from store + bus so it's sticky and also reacts live
   private _onDataProviderLoaded = (payload: TapRepoLoadedPayload) => {
     const { dataProvider } = payload ?? {};
     if (dataProvider) this.dataProvider = dataProvider;
@@ -64,18 +53,20 @@ export class AstroCatalogueTable extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    // 1) Subscribe to the sticky store (instant hydrate + future updates)
-    this.unsubStore = dataProviderStore.subscribe((p) => {
-      if (p) this.dataProvider = p;
-    });
-    // 2) (Optional) still listen to the bus
+    this.unsubStore = dataProviderStore.subscribe((p) => { if (p) this.dataProvider = p; });
     bus.on('tap:repoLoaded', this._onDataProviderLoaded);
   }
-
   disconnectedCallback(): void {
     bus.off('tap:repoLoaded', this._onDataProviderLoaded);
     this.unsubStore?.();
     super.disconnectedCallback();
+  }
+
+  // ---- helpers -------------------------------------------------------------
+  private getColumns(c: Catalogue): Metadata[] {
+    const fromMD = c.metadataList?.metadataList ?? [];
+    const fromColumns = Array.isArray((c as any).columns) ? ((c as any).columns as Metadata[]) : [];
+    return (fromMD.length ? fromMD : fromColumns).filter(Boolean);
   }
 
   // ---- filtering -----------------------------------------------------------
@@ -85,21 +76,68 @@ export class AstroCatalogueTable extends LitElement {
     return (this.dataProvider?.catalogues ?? []).filter(c => {
       const cols = this.getColumns(c);
       const hay = [
-        c.id,
-        c.name,
-        c.description,
-        c.provider,
+        c.id, c.name, c.description, c.provider, this.dataProvider?.url,
         ...cols.map(col => `${col.name} ${col.description} ${col.dataType} ${col.ucd} ${col.unit}`)
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
+      ].filter(Boolean).join(' ').toLowerCase();
       return hay.includes(q);
     });
   }
 
-  private onSelectCatalogue(c: Catalogue) {
-    bus.emit('tap:catalogueSelected', { repo: this.dataProvider?.url, catalogue: c });
+  private openMetadataPanel(c: Catalogue) {
+    // spawn a floating mini-panel; doesn’t affect current panel
+    const el = document.createElement('astro-mini-metadata') as any;
+    el.catalogue = c;
+    el.providerUrl = this.dataProvider?.url ?? '';
+    document.body.appendChild(el);
+  }
+
+  private _callPlotCatalogue(c: Catalogue): Promise<{ dataProvider: DataProvider, catalogue: Catalogue }> {
+    const correlation = cid();
+    return new Promise((resolve, reject) => {
+      const off = bus.on('astro.plot.catalogue:res', (msg: AstroTapCatalogueLoadedResPayload) => {
+        if (msg.cid !== correlation) return;
+        off();
+        if (msg.ok) {
+          // ok === true branch has payload guaranteed by the discriminated union
+          safeResolve(msg.payload); // <- here is where the dataProvider and catalogue are returned
+        } else {
+          safeReject(new Error(msg.error ?? 'Unknown Catalogue plot error'));
+        }
+      });
+
+      // Timeout guard
+      const t = setTimeout(() => {
+        off();
+        reject(new Error('Timeout waiting for TAP repo response'));
+      }, 15000);
+
+      // Ensure cleanup if resolved early
+      const safeResolve = (v: any) => { clearTimeout(t); resolve(v); };
+      const safeReject = (e: any) => { clearTimeout(t); reject(e); };
+
+      // Re-emit using the originals so we don't capture the wrapped ones
+      bus.emit('astro.plot.catalogue:req', { cid: correlation, dataProvider: this.dataProvider, catalogue: c });
+    });
+  }
+
+  private async _plotCatalogue(c: Catalogue) {
+    if (!c) return
+    try {
+      const { dataProvider, catalogue } = await this._callPlotCatalogue(c)
+
+      console.log(`Catalogue ${catalogue.name} loaded from ${dataProvider.url}`)
+      // DOM event for local consumers
+      this.dispatchEvent(new CustomEvent('tap:catalogueSelected', {
+        bubbles: true, composed: true,
+        detail: { repo: this.dataProvider.url, catalogues: c }
+      }));
+
+    } catch (err: any) {
+      console.error('[astro-catalogue-table] load failed:', err);
+      alert(`Failed to load Catalogue data for plot:\n${c.name}\n\n${err?.message ?? err}`);
+    } finally {
+      
+    }
   }
 
   // ---- render --------------------------------------------------------------
@@ -109,7 +147,7 @@ export class AstroCatalogueTable extends LitElement {
       <header>
         <input
           type="search"
-          placeholder="Filter catalogues, columns, UCDs, units…"
+          placeholder="Filter by name, description, URL, columns…"
           @input=${(e: Event) => (this.filter = (e.target as HTMLInputElement).value)}
         />
         <div class="meta">
@@ -121,62 +159,36 @@ export class AstroCatalogueTable extends LitElement {
 
       ${rows.length === 0
         ? html`<div class="empty">
-            ${this.dataProvider?.url
-            ? 'No catalogues match your filter.'
-            : 'Load a TAP repository to see catalogues here.'}
+            ${this.dataProvider?.url ? 'No catalogues match your filter.' : 'Load a TAP repository to see catalogues here.'}
           </div>`
         : html`
-            <table>
-              <thead>
+          <table>
+            <thead>
+              <tr>
+                <th class="nowrap">Catalogue</th>
+                <th>Description</th>
+                <th class="nowrap">Repository URL</th>
+                <th class="nowrap">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(c => html`
                 <tr>
-                  <th class="nowrap">Catalogue</th>
-                  <th>Description</th>
-                  <th class="nowrap">Rows</th>
-                  <th class="nowrap">Columns</th>
+                  <td class="nowrap">
+                    <div><strong>${c.name || c.id}</strong></div>
+                    <div class="subtle">${c.id}${c.provider ? ` · ${c.provider}` : ''}</div>
+                  </td>
+                  <td>${c.description || html`<span class="muted">—</span>`}</td>
+                  <td class="nowrap">${this.dataProvider?.url || html`<span class="muted">—</span>`}</td>
+                  <td class="nowrap">
+                    <button class="btn" @click=${() => this.openMetadataPanel(c)}>Show metadata</button>
+                    <button class="btn" @click=${() => this._plotCatalogue(c)}>Plot</button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                ${rows.map(c => {
-          const cols = this.getColumns(c);
-          const nrows = this.getRowCount(c);
-          return html`
-                    <tr @click=${() => this.onSelectCatalogue(c)} style="cursor:pointer">
-                      <td class="nowrap">
-                        <div><strong>${c.name || c.id}</strong></div>
-                        <div class="subtle">${c.id}${c.provider ? ` · ${c.provider}` : ''}</div>
-                      </td>
-                      <td>
-                        ${c.description || html`<span class="muted">—</span>`}
-                        ${cols.length
-              ? html`<details>
-                              <summary>Show columns (${cols.length})</summary>
-                              <div class="cols">
-                                <div class="muted">name</div>
-                                <div class="muted">type</div>
-                                <div class="muted">unit</div>
-                                <div class="muted">ucd</div>
-                                <div class="muted">description</div>
-                                ${cols.map(col => html`
-                                  <div><code>${col.name}</code></div>
-                                  <div>${col.dataType ?? html`<span class="muted">—</span>`}</div>
-                                  <div>${col.unit ?? html`<span class="muted">—</span>`}</div>
-                                  <div>${col.ucd ?? html`<span class="muted">—</span>`}</div>
-                                  <div>${col.description ?? html`<span class="muted">—</span>`}</div>
-                                `)}
-                              </div>
-                            </details>`
-              : null}
-                      </td>
-                      <td class="nowrap">
-                        ${typeof nrows === 'number' ? nrows.toLocaleString() : html`<span class="muted">—</span>`}
-                      </td>
-                      <td class="nowrap">${cols.length}</td>
-                    </tr>
-                  `;
-        })}
-              </tbody>
-            </table>
-          `}
+              `)}
+            </tbody>
+          </table>
+        `}
     `;
   }
 }

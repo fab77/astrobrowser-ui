@@ -3,6 +3,9 @@
 // Minimal, stable API surface exposed by your AstroViewer wrapper
 // =========================
 
+import { CatalogueGL, FootprintSetGL } from "astroviewer";
+
+
 // import { DataProvider } from "./events";
 
 export interface AstroState { centralRADeg: number; centralDecDeg: number; fov: number }
@@ -14,11 +17,14 @@ export interface IAstroViewerAPI {
     toggleHealpixGrid(on?: boolean): void;
     toggleEquatorialGrid(on?: boolean): void;
     toggleInsideSphere(on?: boolean): void;
-    // addTAPRepo(url: string): Promise<{ catalogues: Catalogue[]; footprints: FootprintSet[] }>;
+    
     addTAPRepo(url: string): Promise<DataProvider>;
     setFoV(fov: number): void;
     getState(): AstroState;
     onStateChanged?: (cb: (s: AstroState) => void) => void; // optional subscription bridge
+    // catalogue
+    showCatalogue(catalogue: CatalogueGL): void
+
 }
 
 export interface AstroState {
@@ -82,6 +88,7 @@ export interface Catalogue {
   description?: string;
   provider?: string;
   metadataDetails?: MetadataDetails;
+  astroviewerGlObj: CatalogueGL
   // allow extra fields coming from adapters
   [k: string]: any;
 }
@@ -92,6 +99,7 @@ export interface FootprintSet {
   description?: string;
   provider?: string;
   metadataDetails?: MetadataDetails;
+  astroviewerGlObj: FootprintSetGL
   // allow extra fields coming from adapters
   [k: string]: any;
 }
@@ -107,6 +115,24 @@ export type AstroTapAddRepoResPayload =
       cid: string;
       ok: true;
       payload: { dataProvider: DataProvider };
+    }
+  | {
+      cid: string;
+      ok: false;
+      error: string;
+    };
+
+    export interface AstroTapCatalogueLoadedReqPayload {
+      cid: string;
+      dataProvider: DataProvider
+      catalogue: Catalogue
+    }
+    
+    export type AstroTapCatalogueLoadedResPayload =
+  | {
+      cid: string;
+      ok: true;
+      payload: { dataProvider: DataProvider, catalogue: Catalogue };
     }
   | {
       cid: string;
