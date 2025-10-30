@@ -34,28 +34,44 @@ export class AstroCatalogueTable extends LitElement {
     .btn:hover { background:#f8f8f8; }
   `;
 
-  @state() private dataProvider: DataProvider = {
-    type: 'TAP',
-    url: '',
-    functions: [],
-    catalogues: [],
-    footprints: []
-  };
+  // @state() private dataProvider: DataProvider = {
+  //   type: 'TAP',
+  //   url: '',
+  //   functions: [],
+  //   catalogues: [],
+  //   footprints: []
+  // };
+
+  @state() dataProviders: DataProvider[] = []
 
   private unsubStore?: () => void;
   @state() private filter = '';
 
+  private getDataProviderByURL(url: string): DataProvider {
+    const dataProvider = this.dataProviders.find( p => p.url == url )
+    if (!dataProvider)  {
+      console.error('[astro-catalogue-table] load failed:');
+      throw new Error(`Dataprovider ${url} not found`)
+    }
+    return dataProvider
+  }
+  
   // --- hydrate from store + bus so it's sticky and also reacts live
   private _onDataProviderLoaded = (payload: TapRepoLoadedPayload) => {
     const { dataProvider } = payload ?? {};
-    if (dataProvider) this.dataProvider = dataProvider;
+    if (dataProvider) this.dataProviders.push (dataProvider);
   };
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.unsubStore = dataProviderStore.subscribe((p) => { if (p) this.dataProvider = p; });
+    this.unsubStore = dataProviderStore.subscribe((p) => { if (p) {
+      // this.dataProvider = p;
+      if (!this.dataProviders.includes(p))
+        this.dataProviders.push(p)
+    }  });
     bus.on('tap:repoLoaded', this._onDataProviderLoaded);
   }
+
   disconnectedCallback(): void {
     bus.off('tap:repoLoaded', this._onDataProviderLoaded);
     this.unsubStore?.();
@@ -72,11 +88,16 @@ export class AstroCatalogueTable extends LitElement {
   // ---- filtering -----------------------------------------------------------
   private filtered(): Catalogue[] {
     const q = this.filter.trim().toLowerCase();
-    if (!q) return this.dataProvider?.catalogues ?? [];
-    return (this.dataProvider?.catalogues ?? []).filter(c => {
+    
+    const allCatalogues = this.dataProviders.flatMap( p => p.catalogues)
+    // if (!q) return this.dataProvider?.catalogues ?? [];
+    if (!q) return allCatalogues ?? [];
+
+    
+    return ( allCatalogues ?? []).filter(c => {
       const cols = this.getColumns(c);
       const hay = [
-        c.id, c.name, c.description, c.provider, this.dataProvider?.url,
+        c.name, c.description, c.provider,
         ...cols.map(col => `${col.name} ${col.description} ${col.dataType} ${col.ucd} ${col.unit}`)
       ].filter(Boolean).join(' ').toLowerCase();
       return hay.includes(q);
@@ -87,7 +108,7 @@ export class AstroCatalogueTable extends LitElement {
     // spawn a floating mini-panel; doesn’t affect current panel
     const el = document.createElement('astro-mini-metadata') as any;
     el.catalogue = c;
-    el.providerUrl = this.dataProvider?.url ?? '';
+    el.providerUrl = c.provider ?? '';
     document.body.appendChild(el);
   }
 
@@ -116,20 +137,24 @@ export class AstroCatalogueTable extends LitElement {
       const safeReject = (e: any) => { clearTimeout(t); reject(e); };
 
       // Re-emit using the originals so we don't capture the wrapped ones
-      bus.emit('astro.plot.catalogue:req', { cid: correlation, dataProvider: this.dataProvider, catalogue: c });
+      bus.emit('astro.plot.catalogue:req', { 
+        cid: correlation, 
+        dataProvider: this.getDataProviderByURL(c.provider), 
+        catalogue: c });
     });
   }
 
   private async _plotCatalogue(c: Catalogue) {
     if (!c) return
     try {
+
       const { dataProvider, catalogue } = await this._callPlotCatalogue(c)
 
       console.log(`Catalogue ${catalogue.name} loaded from ${dataProvider.url}`)
       // DOM event for local consumers
       this.dispatchEvent(new CustomEvent('tap:catalogueSelected', {
         bubbles: true, composed: true,
-        detail: { repo: this.dataProvider.url, catalogues: c }
+        detail: { repo: dataProvider.url, catalogues: c }
       }));
 
     } catch (err: any) {
@@ -145,21 +170,20 @@ export class AstroCatalogueTable extends LitElement {
     const rows = this.filtered();
     return html`
       <header>
-        <input
-          type="search"
-          placeholder="Filter by name, description, URL, columns…"
+        <input type="search" placeholder="Filter by name, description, URL, columns…"
           @input=${(e: Event) => (this.filter = (e.target as HTMLInputElement).value)}
         />
+
         <div class="meta">
-          ${this.dataProvider?.url
-        ? html`<span class="pill">Repo</span>${this.dataProvider.url}`
-        : html`<span class="muted">Waiting for TAP repo…</span>`}
+          ${this.dataProviders?.map (p => p.url
+        ? html`<span class="pill">Repo</span>${p.url}`
+        : html`<span class="muted">Waiting for TAP repo…</span>`)}
         </div>
       </header>
 
       ${rows.length === 0
         ? html`<div class="empty">
-            ${this.dataProvider?.url ? 'No catalogues match your filter.' : 'Load a TAP repository to see catalogues here.'}
+            ${this.dataProviders?.map( p => p.url ? html`No catalogues match your filter in ${p.url} .` : 'Load a TAP repository to see catalogues here.')}
           </div>`
         : html`
           <table>
@@ -176,10 +200,10 @@ export class AstroCatalogueTable extends LitElement {
                 <tr>
                   <td class="nowrap">
                     <div><strong>${c.name || c.id}</strong></div>
-                    <div class="subtle">${c.id}${c.provider ? ` · ${c.provider}` : ''}</div>
+                    <div class="subtle">${c.name}</div>
                   </td>
                   <td>${c.description || html`<span class="muted">—</span>`}</td>
-                  <td class="nowrap">${this.dataProvider?.url || html`<span class="muted">—</span>`}</td>
+                  <td class="nowrap"> ${this.dataProviders.map( p => p.url)|| html`<span class="muted">—</span>`}</td>
                   <td class="nowrap">
                     <button class="btn" @click=${() => this.openMetadataPanel(c)}>Show metadata</button>
                     <button class="btn" @click=${() => this._plotCatalogue(c)}>Plot</button>

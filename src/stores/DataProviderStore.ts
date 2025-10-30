@@ -3,24 +3,27 @@ import type { DataProvider } from 'src/types';
 type Listener = (p: DataProvider | undefined) => void;
 
 class DataProviderStore {
-  private _provider?: DataProvider;
+  // private _provider?: DataProvider;
+  private _providers: DataProvider[] = [];
   private listeners = new Set<Listener>();
 
-  get(): DataProvider | undefined { return this._provider; }
+  get(): DataProvider[] { return this._providers; }
 
-  set(p?: DataProvider) {
-    this._provider = p;
-    this.listeners.forEach(l => l(this._provider));
+  add(p: DataProvider) {
+    this._providers.push( p );
+    this.listeners.forEach(l => l(p));
   }
 
   subscribe(l: Listener): () => void {
     this.listeners.add(l);
     // immediately push current value so late subscribers hydrate
-    l(this._provider);
+    this._providers.forEach( (p) => {
+      l(p);
+    })    
     return () => this.listeners.delete(l);
   }
 
-  clear() { this.set(undefined); }
+  clear() { this._providers = []; }
 }
 
 export const dataProviderStore = new DataProviderStore();

@@ -86,7 +86,7 @@ export interface Catalogue {
   id: string
   name: string;
   description?: string;
-  provider?: string;
+  provider: string;
   metadataDetails?: MetadataDetails;
   astroviewerGlObj: CatalogueGL
   // allow extra fields coming from adapters

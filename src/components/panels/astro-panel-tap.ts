@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
 import { bus, cid } from '../../bus';
-import type { Catalogue, FootprintSet, AstroTapAddRepoResPayload, DataProvider } from '../../types';
+import type { Catalogue, FootprintSet, AstroTapAddRepoResPayload, DataProvider, TapRepoLoadedPayload } from '../../types';
 import { dataProviderStore } from '../../stores/DataProviderStore';
 
 @customElement('astro-panel-tap')
@@ -43,6 +43,9 @@ export class AstroPanelTap extends LitElement {
     'https://gea.esac.esa.int/tap-server/tap',
   ];
 
+  // @state() _tapRepoLoaded: string[] = []
+  @state() dataProviders: DataProvider[] = []
+
   /** Outputs to fill after loading */
   @state() catalogues: Catalogue[] = [];
   @state() footprints: FootprintSet[] = [];
@@ -54,14 +57,43 @@ export class AstroPanelTap extends LitElement {
 
   private _off?: () => void;
 
+  // --- hydrate from store + bus so it's sticky and also reacts live
+  private _onDataProviderLoaded = (payload: TapRepoLoadedPayload) => {
+    const { dataProvider } = payload ?? {};
+    if (dataProvider) this.dataProviders.push(dataProvider);
+  };
+
   connectedCallback() {
     super.connectedCallback();
+    this.unsubStore = dataProviderStore.subscribe((p) => {
+      if (p) {
+        // this.dataProvider = p;
+        if (!this.dataProviders.includes(p))
+          this.dataProviders.push(p)
+      }
+    });
+    bus.on('tap:repoLoaded', this._onDataProviderLoaded);
   }
 
   disconnectedCallback() {
     this._off?.();
+    bus.off('tap:repoLoaded', this._onDataProviderLoaded);
+    this.unsubStore?.();
     super.disconnectedCallback();
   }
+
+  private unsubStore?: () => void;
+  @state() private filter = '';
+
+  private getDataProviderByURL(url: string): DataProvider {
+    const dataProvider = this.dataProviders.find(p => p.url == url)
+    if (!dataProvider) {
+      console.error('[astro-catalogue-table] load failed:');
+      throw new Error(`Dataprovider ${url} not found`)
+    }
+    return dataProvider
+  }
+
 
   private async _callAddTAPRepo(url: string): Promise<{ dataProvider: DataProvider }> {
     const correlation = cid();
@@ -85,7 +117,7 @@ export class AstroPanelTap extends LitElement {
 
       // Ensure cleanup if resolved early
       const safeResolve = (v: any) => { clearTimeout(t); resolve(v); };
-      const safeReject  = (e: any) => { clearTimeout(t); reject(e); };
+      const safeReject = (e: any) => { clearTimeout(t); reject(e); };
 
       // Re-emit using the originals so we don't capture the wrapped ones
       bus.emit('astro.tap.addRepo:req', { cid: correlation, url });
@@ -97,7 +129,7 @@ export class AstroPanelTap extends LitElement {
     this._loadingUrl = url;
     try {
       const { dataProvider } = await this._callAddTAPRepo(url);
-      dataProviderStore.set(dataProvider)
+      dataProviderStore.add(dataProvider)
 
       // Fill reactive outputs
       this.catalogues = Array.isArray(dataProvider.catalogues) ? dataProvider.catalogues : [];
@@ -110,13 +142,14 @@ export class AstroPanelTap extends LitElement {
         detail: { url, catalogues: this.catalogues, footprints: this.footprints }
       }));
 
-    //   // Bus event for app-wide consumers <- this is done in the AstroController
-    //   bus.emit('tap:repoLoaded', { url, dataProvider: dataProvider });
+      //   // Bus event for app-wide consumers <- this is done in the AstroController
+      //   bus.emit('tap:repoLoaded', { url, dataProvider: dataProvider });
     } catch (err: any) {
       console.error('[astro-panel-tap] load failed:', err);
       alert(`Failed to load TAP repo:\n${url}\n\n${err?.message ?? err}`);
     } finally {
       this._loadingUrl = null;
+      // this._tapRepoLoaded.push(url)
     }
   }
 
@@ -138,7 +171,8 @@ export class AstroPanelTap extends LitElement {
             @click=${() => this._loadRepo(url)}
             aria-label=${`Load ${url}`}
           >
-            ${this._loadingUrl === url ? 'Loading…' : 'Load'}
+            <!-- ${this._loadingUrl === url ? 'Loading…' : 'Load'} -->
+            ${this._loadingUrl === url ? 'Loading…' : (this.dataProviders.find( p => p.url == url ) ? 'Loaded' : 'Load')}
           </button>
         </div>
       `)}
