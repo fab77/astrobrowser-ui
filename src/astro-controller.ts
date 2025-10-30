@@ -1,6 +1,6 @@
 // src/astro-controller.ts
 import { bus } from './bus';
-import type { Catalogue, DataProvider, IAstroViewerAPI } from './types';
+import type { Catalogue, DataProvider, FootprintSet, IAstroViewerAPI } from './types';
 
 export class AstroController {
   constructor(private api: IAstroViewerAPI) { }
@@ -37,6 +37,23 @@ export class AstroController {
       }
     });
     
+    bus.on('astro.plot.footprintset:req', async ({cid, dataProvider, footprintSet}) => {
+      try {
+
+        await this.api.showFootprintSet(footprintSet.astroviewerGlObj)
+
+        const payload: { dataProvider: DataProvider, footprintSet: FootprintSet } = {
+          dataProvider: dataProvider,
+          footprintSet: footprintSet
+        };
+        
+        bus.emit('astro.plot.footprintset:res', { cid, ok: true, payload });
+        bus.emit('tap:footprintsetSelected', { ...payload });
+      } catch  (e: any) {
+        bus.emit('astro.plot.footprintset:res', { cid, ok: false, error: e?.message ?? String(e) });
+      }
+    });
+    
     // === TAP integration (bus-only) ===
     bus.on('astro.tap.addRepo:req', async ({ cid, url }) => {
       try {
@@ -64,8 +81,3 @@ export class AstroController {
 
   }
 }
-
-// function async(arg0: {}): (payload: { repo: string; catalogueId: string; }) => void {
-//   throw new Error('Function not implemented.');
-// }
-

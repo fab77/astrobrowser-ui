@@ -13,19 +13,18 @@ export class AstroPanelDraggable extends LitElement {
       position: fixed;
       top: 100px;
       left: 100px;
-      width: 360px;
-      height: 260px;
-      max-width: calc(100vw - 20px);
-      max-height: calc(100vh - 20px);
-      background: #1c1f27;
-      // color: #e9edf1;
-      border: 1px solid #2b3240;
+      width: 450px;
+      height: 80%;
+      max-width: calc(-20px + 100vw);
+      max-height: calc(-20px + 100vh);
+      background: rgb(28, 31, 39);
+      border: 1px solid rgb(43, 50, 64);
       border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0,0,0,.35);
+      box-shadow: rgba(0, 0, 0, 0.35) 0px 8px 24px;
       user-select: none;
       touch-action: none;
       box-sizing: border-box;
-      overflow: hidden;
+      overflow: scroll;
     }
 
     header {
@@ -186,7 +185,7 @@ export class AstroPanelDraggable extends LitElement {
     window.removeEventListener('pointerup', this.onPointerUp);
   };
 
-  
+
   private onCloseClick = (e: MouseEvent) => {
     e.stopPropagation(); // don't let header drag start
 

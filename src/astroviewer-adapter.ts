@@ -1,4 +1,4 @@
-import { AstroViewer, CameraChangedDetail, CatalogueGL, TapRepo, addTAPRepo } from 'astroviewer';
+import { AstroViewer, CameraChangedDetail, CatalogueGL, FootprintSetGL, TapRepo, addTAPRepo } from 'astroviewer';
 import { DataProvider, AstroState, IAstroViewerAPI } from './types';
 import { convertTapRepoToDataProvider } from './helpers/tap-converter';
 
@@ -80,6 +80,10 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
 
     async showCatalogue(catalogue: CatalogueGL): Promise<void> {
         this.viewer?.showCatalogue(catalogue)
+    }
+    
+    async showFootprintSet(fset: FootprintSetGL): Promise<void> {
+        this.viewer?.showFootprintSet(fset)
     }
 
 

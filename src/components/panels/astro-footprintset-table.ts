@@ -1,12 +1,12 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { bus, cid } from '../../bus';
-import { AstroTapCatalogueLoadedResPayload, Catalogue, DataProvider, Metadata, TapRepoLoadedPayload } from 'src/types';
+import { AstroTaFootprintSetLoadedResPayload, FootprintSet, DataProvider, Metadata, TapRepoLoadedPayload } from 'src/types';
 import { dataProviderStore } from '../../stores/DataProviderStore';
 import '../mini-panels/astro-mini-metadata'; // <-- make sure path matches where you put it
 
-@customElement('astro-catalogue-table')
-export class AstroCatalogueTable extends LitElement {
+@customElement('astro-footprintset-table')
+export class AstroFootprintSetTable extends LitElement {
   static styles = css`
     :host { 
       display:block; 
@@ -40,9 +40,9 @@ export class AstroCatalogueTable extends LitElement {
     .btn:hover { background:#f8f8f8; }
   `;
 
-  @state() dataProviders: DataProvider[] = []
+  @property() dataProviders: DataProvider[] = []
 
-  private unsubStore?: () => void;
+  // private unsubStore?: () => void;
   @state() private filter = '';
 
   private getDataProviderByURL(url: string): DataProvider {
@@ -54,74 +54,73 @@ export class AstroCatalogueTable extends LitElement {
     }
     return dataProvider
   }
-
-  // --- hydrate from store + bus so it's sticky and also reacts live
-  private _onDataProviderLoaded = (payload: TapRepoLoadedPayload) => {
-    const { dataProvider } = payload ?? {};
-    if (dataProvider) this.dataProviders.push (dataProvider);
-  };
+  
+  // // --- hydrate from store + bus so it's sticky and also reacts live
+  // private _onDataProviderLoaded = (payload: TapRepoLoadedPayload) => {
+  //   const { dataProvider } = payload ?? {};
+  //   if (dataProvider) this.dataProviders.push (dataProvider);
+  // };
 
   connectedCallback(): void {
     super.connectedCallback();
-    this.unsubStore = dataProviderStore.subscribe((p) => { if (p) {
-      // this.dataProvider = p;
-      if (!this.dataProviders.includes(p))
-        this.dataProviders.push(p)
-    }  });
-    bus.on('tap:repoLoaded', this._onDataProviderLoaded);
+    // this.unsubStore = dataProviderStore.subscribe((p) => { if (p) {
+    //   // this.dataProvider = p;
+    //   if (!this.dataProviders.includes(p))
+    //     this.dataProviders.push(p)
+    // }  });
+    // bus.on('tap:repoLoaded', this._onDataProviderLoaded);
   }
 
   disconnectedCallback(): void {
-    bus.off('tap:repoLoaded', this._onDataProviderLoaded);
-    this.unsubStore?.();
+    // bus.off('tap:repoLoaded', this._onDataProviderLoaded);
+    // this.unsubStore?.();
     super.disconnectedCallback();
   }
 
   // ---- helpers -------------------------------------------------------------
-  private getColumns(c: Catalogue): Metadata[] {
-    const fromMD = c.metadataList?.metadataList ?? [];
-    const fromColumns = Array.isArray((c as any).columns) ? ((c as any).columns as Metadata[]) : [];
+  private getColumns(f: FootprintSet): Metadata[] {
+    const fromMD = f.metadataList?.metadataList ?? [];
+    const fromColumns = Array.isArray((f as any).columns) ? ((f as any).columns as Metadata[]) : [];
     return (fromMD.length ? fromMD : fromColumns).filter(Boolean);
   }
 
   // ---- filtering -----------------------------------------------------------
-  private filtered(): Catalogue[] {
+  private filtered(): FootprintSet[] {
     const q = this.filter.trim().toLowerCase();
     
-    const allCatalogues = this.dataProviders.flatMap( p => p.catalogues)
-    // if (!q) return this.dataProvider?.catalogues ?? [];
-    if (!q) return allCatalogues ?? [];
+    const allFootprintSet = this.dataProviders.flatMap( p => p.footprints)
+    if (!q) return allFootprintSet ?? [];
 
     
-    return ( allCatalogues ?? []).filter(c => {
-      const cols = this.getColumns(c);
+    return ( allFootprintSet ?? []).filter(f => {
+      const cols = this.getColumns(f);
       const hay = [
-        c.name, c.description, c.provider,
+        f.name, f.description, f.provider,
         ...cols.map(col => `${col.name} ${col.description} ${col.dataType} ${col.ucd} ${col.unit}`)
       ].filter(Boolean).join(' ').toLowerCase();
       return hay.includes(q);
     });
   }
 
-  private openMetadataPanel(c: Catalogue) {
+  private openMetadataPanel(f: FootprintSet) {
     // spawn a floating mini-panel; doesn’t affect current panel
     const el = document.createElement('astro-mini-metadata') as any;
-    el.catalogue = c;
-    el.providerUrl = c.provider ?? '';
+    el.footprintset = f;
+    el.providerUrl = f.provider ?? '';
     document.body.appendChild(el);
   }
 
-  private _callPlotCatalogue(c: Catalogue): Promise<{ dataProvider: DataProvider, catalogue: Catalogue }> {
+  private _callPlotFootprintSet(f: FootprintSet): Promise<{ dataProvider: DataProvider, footprintSet: FootprintSet }> {
     const correlation = cid();
     return new Promise((resolve, reject) => {
-      const off = bus.on('astro.plot.catalogue:res', (msg: AstroTapCatalogueLoadedResPayload) => {
+      const off = bus.on('astro.plot.footprintset:res', (msg: AstroTaFootprintSetLoadedResPayload) => {
         if (msg.cid !== correlation) return;
         off();
         if (msg.ok) {
           // ok === true branch has payload guaranteed by the discriminated union
-          safeResolve(msg.payload); // <- here is where the dataProvider and catalogue are returned
+          safeResolve(msg.payload); // <- here is where the dataProvider and footprintSet are returned
         } else {
-          safeReject(new Error(msg.error ?? 'Unknown Catalogue plot error'));
+          safeReject(new Error(msg.error ?? 'Unknown FootprintSet plot error'));
         }
       });
 
@@ -136,29 +135,29 @@ export class AstroCatalogueTable extends LitElement {
       const safeReject = (e: any) => { clearTimeout(t); reject(e); };
 
       // Re-emit using the originals so we don't capture the wrapped ones
-      bus.emit('astro.plot.catalogue:req', { 
+      bus.emit('astro.plot.footprintset:req', { 
         cid: correlation, 
-        dataProvider: this.getDataProviderByURL(c.provider), 
-        catalogue: c });
+        dataProvider: this.getDataProviderByURL(f.provider), 
+        footprintSet: f });
     });
   }
 
-  private async _plotCatalogue(c: Catalogue) {
-    if (!c) return
+  private async _plotFootprintSet(f: FootprintSet) {
+    if (!f) return
     try {
 
-      const { dataProvider, catalogue } = await this._callPlotCatalogue(c)
+      const { dataProvider, footprintSet } = await this._callPlotFootprintSet(f)
 
-      console.log(`Catalogue ${catalogue.name} loaded from ${dataProvider.url}`)
+      console.log(`FootprontSets ${footprintSet.name} loaded from ${dataProvider.url}`)
       // DOM event for local consumers
-      this.dispatchEvent(new CustomEvent('tap:catalogueSelected', {
+      this.dispatchEvent(new CustomEvent('tap:footprintsetSelected', {
         bubbles: true, composed: true,
-        detail: { repo: dataProvider.url, catalogues: c }
+        detail: { repo: dataProvider.url, footprintSet: f }
       }));
 
     } catch (err: any) {
-      console.error('[astro-catalogue-table] load failed:', err);
-      alert(`Failed to load Catalogue data for plot:\n${c.name}\n\n${err?.message ?? err}`);
+      console.error('[astro-footprintSet-table] load failed:', err);
+      alert(`Failed to load footprintSet data for plot:\n${f.name}\n\n${err?.message ?? err}`);
     } finally {
       
     }
@@ -182,30 +181,30 @@ export class AstroCatalogueTable extends LitElement {
 
       ${rows.length === 0
         ? html`<div class="empty">
-            ${this.dataProviders?.map( p => p.url ? html`No catalogues match your filter in ${p.url} .` : 'Load a TAP repository to see catalogues here.')}
+            ${this.dataProviders?.map( p => p.url ? html`No footprontSets match your filter in ${p.url} .` : 'Load a TAP repository to see catalogues here.')}
           </div>`
         : html`
           <table>
             <thead>
               <tr>
-                <th class="nowrap">Catalogue</th>
+                <th class="nowrap">FootprontSet</th>
                 <th>Description</th>
                 <th class="nowrap">Repository URL</th>
                 <th class="nowrap">Actions</th>
               </tr>
             </thead>
             <tbody>
-              ${rows.map(c => html`
+              ${rows.map(f => html`
                 <tr>
                   <td class="nowrap">
-                    <div><strong>${c.name || c.id}</strong></div>
-                    <div class="subtle">${c.name}</div>
+                    <div><strong>${f.name || f.id}</strong></div>
+                    <div class="subtle">${f.name}</div>
                   </td>
-                  <td>${c.description || html`<span class="muted">—</span>`}</td>
-                  <td class="nowrap"> ${c.provider || html`<span class="muted">—</span>`}</td>
+                  <td>${f.description || html`<span class="muted">—</span>`}</td>
+                  <td class="nowrap"> ${f.provider || html`<span class="muted">—</span>`}</td>
                   <td class="nowrap">
-                    <button class="btn" @click=${() => this.openMetadataPanel(c)}>Show metadata</button>
-                    <button class="btn" @click=${() => this._plotCatalogue(c)}>Plot</button>
+                    <button class="btn" @click=${() => this.openMetadataPanel(f)}>Show metadata</button>
+                    <button class="btn" @click=${() => this._plotFootprintSet(f)}>Plot</button>
                   </td>
                 </tr>
               `)}

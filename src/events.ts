@@ -3,7 +3,7 @@
 // Central type-safe event map for PubSub between panels and AstroViewer
 // =========================
 
-import { AstroState, AstroTapAddRepoReqPayload, AstroTapAddRepoResPayload, AstroTapCatalogueLoadedReqPayload, AstroTapCatalogueLoadedResPayload, Catalogue, DataProvider, TabKey, TapRepoLoadedPayload } from "./types";
+import { AstroState, AstroTaFootprintSetLoadedReqPayload, AstroTaFootprintSetLoadedResPayload, AstroTapAddRepoReqPayload, AstroTapAddRepoResPayload, AstroTapCatalogueLoadedReqPayload, AstroTapCatalogueLoadedResPayload, Catalogue, DataProvider, FootprintSet, TabKey, TapRepoLoadedPayload } from "./types";
 
 
 
@@ -28,9 +28,14 @@ export interface BusEvents {
   'astro.tap.addRepo:req': AstroTapAddRepoReqPayload;
   'astro.tap.addRepo:res': AstroTapAddRepoResPayload;
   'tap:repoLoaded': TapRepoLoadedPayload;
+  
   'tap:catalogueSelected': { dataProvider: DataProvider, catalogue: Catalogue };
   'astro.plot.catalogue:req': AstroTapCatalogueLoadedReqPayload
   'astro.plot.catalogue:res': AstroTapCatalogueLoadedResPayload
+  
+  'tap:footprintsetSelected': { dataProvider: DataProvider, footprintSet: FootprintSet };
+  'astro.plot.footprintset:req': AstroTaFootprintSetLoadedReqPayload
+  'astro.plot.footprintset:res': AstroTaFootprintSetLoadedResPayload
 
   // Queries
   'astro.get.state:req': { cid: string };

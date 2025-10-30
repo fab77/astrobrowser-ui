@@ -24,6 +24,7 @@ export interface IAstroViewerAPI {
     onStateChanged?: (cb: (s: AstroState) => void) => void; // optional subscription bridge
     // catalogue
     showCatalogue(catalogue: CatalogueGL): void
+    showFootprintSet(fset: FootprintSetGL): void
 
 }
 
@@ -97,7 +98,7 @@ export interface FootprintSet {
   id: string
   name: string;
   description?: string;
-  provider?: string;
+  provider: string;
   metadataDetails?: MetadataDetails;
   astroviewerGlObj: FootprintSetGL
   // allow extra fields coming from adapters
@@ -139,6 +140,29 @@ export type AstroTapAddRepoResPayload =
       ok: false;
       error: string;
     };
+    
+    
+    export interface AstroTaFootprintSetLoadedReqPayload {
+      cid: string;
+      dataProvider: DataProvider
+      footprintSet: FootprintSet
+    }
+    
+    export type AstroTaFootprintSetLoadedResPayload =
+  | {
+      cid: string;
+      ok: true;
+      payload: { dataProvider: DataProvider, footprintSet: FootprintSet };
+    }
+  | {
+      cid: string;
+      ok: false;
+      error: string;
+    };
+
+
+
+
 
 // Fire-and-forget notification once a TAP repo is effectively available app-wide
 export interface TapRepoLoadedPayload {

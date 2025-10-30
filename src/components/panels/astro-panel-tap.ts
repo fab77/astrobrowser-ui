@@ -14,6 +14,7 @@ export class AstroPanelTap extends LitElement {
       font: 13px/1.35 system-ui, sans-serif;
       color: rgb(4, 82, 117);
       top: 135px;
+      width: 96%;
     }
     .row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
     .url { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -158,6 +159,15 @@ export class AstroPanelTap extends LitElement {
     if (url) this._loadRepo(url);
   }
 
+  renderLoaded(url: string){
+    const p = this.dataProviders.find( p => p.url == url )
+    if (!p) return ""
+    return html`<div style="margin-top:14px">
+          <span class="pill" title="Catalogues count">${p.catalogues.length} catalogues</span>
+          <span class="pill" title="Footprints count">${p.footprints.length} footprintsets</span>
+        </div>`
+  }
+
   render() {
     return html`
       <h3>TAP repositories</h3>
@@ -169,12 +179,11 @@ export class AstroPanelTap extends LitElement {
           <button
             ?disabled=${this._loadingUrl === url}
             @click=${() => this._loadRepo(url)}
-            aria-label=${`Load ${url}`}
-          >
-            <!-- ${this._loadingUrl === url ? 'Loading…' : 'Load'} -->
+            aria-label=${`Load ${url}`}>
             ${this._loadingUrl === url ? 'Loading…' : (this.dataProviders.find( p => p.url == url ) ? 'Loaded' : 'Load')}
           </button>
         </div>
+        ${this.renderLoaded(url)}
       `)}
 
       <div class="inline-input">
@@ -187,36 +196,6 @@ export class AstroPanelTap extends LitElement {
         />
         <button ?disabled=${!!this._loadingUrl} @click=${this._onCustomLoad}>Load</button>
       </div>
-
-      ${this._lastLoadedUrl ? html`
-        <div style="margin-top:14px">
-          <strong>Last loaded:</strong> <span class="url">${this._lastLoadedUrl}</span>
-          <span class="pill" title="Catalogues count">${this.catalogues.length} catalogues</span>
-          <span class="pill" title="Footprints count">${this.footprints.length} footprints</span>
-        </div>
-
-        ${this.catalogues.length ? html`
-          <details open>
-            <summary>Catalogues (${this.catalogues.length})</summary>
-            <ul>
-              ${this.catalogues.map(c => html`
-                <li><code>${c.name ?? '(unnamed)'}</code>${c.description ? html` — ${c.description}` : ''}</li>
-              `)}
-            </ul>
-          </details>
-        ` : null}
-
-        ${this.footprints.length ? html`
-          <details style="margin-top:8px">
-            <summary>Footprints (${this.footprints.length})</summary>
-            <ul>
-              ${this.footprints.map(f => html`
-                <li><code>${f.name ?? '(unnamed)'}</code>${f.description ? html` — ${f.description}` : ''}</li>
-              `)}
-            </ul>
-          </details>
-        ` : null}
-      ` : null}
     `;
   }
 }
