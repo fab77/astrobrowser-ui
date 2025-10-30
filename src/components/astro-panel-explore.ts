@@ -51,7 +51,7 @@ export class AstroPanelExplore extends LitElement {
         <header>Explore</header>
         <main>
             <astro-panel-goto></astro-panel-goto>  
-            <astro-catalogue-table></astro-catalogue-table>
+            <astro-catalogue-table .dataProviders=${this.dataProviders}></astro-catalogue-table>
             <astro-footprintset-table .dataProviders=${this.dataProviders}></astro-footprintset-table>
         </main>
       </div>

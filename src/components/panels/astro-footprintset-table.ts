@@ -55,25 +55,11 @@ export class AstroFootprintSetTable extends LitElement {
     return dataProvider
   }
   
-  // // --- hydrate from store + bus so it's sticky and also reacts live
-  // private _onDataProviderLoaded = (payload: TapRepoLoadedPayload) => {
-  //   const { dataProvider } = payload ?? {};
-  //   if (dataProvider) this.dataProviders.push (dataProvider);
-  // };
-
   connectedCallback(): void {
     super.connectedCallback();
-    // this.unsubStore = dataProviderStore.subscribe((p) => { if (p) {
-    //   // this.dataProvider = p;
-    //   if (!this.dataProviders.includes(p))
-    //     this.dataProviders.push(p)
-    // }  });
-    // bus.on('tap:repoLoaded', this._onDataProviderLoaded);
   }
 
   disconnectedCallback(): void {
-    // bus.off('tap:repoLoaded', this._onDataProviderLoaded);
-    // this.unsubStore?.();
     super.disconnectedCallback();
   }
 
