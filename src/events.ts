@@ -41,6 +41,8 @@ export interface BusEvents {
   'astro.get.state:req': { cid: string };
   'astro.get.state:res': { cid: string; state: AstroState };
 
+  // 'astro:settingsChanged': SettingChangedPayload
+
   // Broadcast
   'astro.state.changed': { state: AstroState };
   'astro.ready': { version: string };

@@ -14,6 +14,7 @@ import './components/panels/astro-panel-fov';
 import './components/panels/astro-panel-coordinates';
 import './components/panels/astro-panel-tap';
 import './components/astro-panel-explore';
+import './components/astro-panel-settings';
 
 // (import other panels here if/when you add them)
 
@@ -81,12 +82,14 @@ async function main() {
     registry.register('settings', () => {
         const el = document.createElement('astro-panel-draggable');
         el.innerHTML = `
-      <h3 slot="title" style="margin:0;font:600 13px system-ui">Settings</h3>
-      <astro-panel-grid></astro-panel-grid>
-      <astro-panel-inside-sphere></astro-panel-inside-sphere>
-      <astro-panel-tap></astro-panel-tap>
-      
+      <astro-panel-settings></astro-panel-settings>
     `;
+    //     el.innerHTML = `
+    //   <h3 slot="title" style="margin:0;font:600 13px system-ui">Settings</h3>
+    //   <astro-panel-grid></astro-panel-grid>
+    //   <astro-panel-inside-sphere></astro-panel-inside-sphere>
+    //   <astro-panel-tap></astro-panel-tap>
+    // `;
         return el;
     });
 

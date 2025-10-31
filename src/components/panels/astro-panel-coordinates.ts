@@ -20,7 +20,7 @@ type DMS = {
 }
 
 @customElement('astro-panel-coordinates')
-export class AstroPanelFoV extends LitElement {
+export class AstroPanelCoordinate extends LitElement {
     static styles = css`
     :host{
       display:block;

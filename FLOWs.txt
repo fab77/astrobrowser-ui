@@ -1,0 +1,14 @@
+# Mouse move (dragged or not, zoom in/out)
+PRECONDITIONS:
+- astroviewer-adapter add an event listener for CustomEvent("cameraChanged") init()
+- astro-controller registers itself by calling astroviewer-adapter.onStateChanged 
+and passing as callback cb the emit of 'astro.state.changed'
+
+FLOW:
+1. AstroViewer: issues CustomEvent("cameraChanged") -> 
+astroviewer-adapter event listener catches the event -> 
+astroviewer-adapter notifyIfChanged calls all callbacks registered (via listeners) ->
+astro-controller registered callback is called and:
+    bus.emit('astro.state.changed', { state })
+-> all components listening on bus.on('astro.state.changed') are triggered 
+astro

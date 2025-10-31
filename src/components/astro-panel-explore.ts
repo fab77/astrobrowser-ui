@@ -19,7 +19,6 @@ export class AstroPanelExplore extends LitElement {
 
 
   private unsubStore?: () => void;
-  @state() private filter = '';
 
   // --- hydrate from store + bus so it's sticky and also reacts live
   private _onDataProviderLoaded = (payload: TapRepoLoadedPayload) => {

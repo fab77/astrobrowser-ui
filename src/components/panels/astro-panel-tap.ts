@@ -53,10 +53,10 @@ export class AstroPanelTap extends LitElement {
 
   /** Internal UI state */
   @state() private _loadingUrl: string | null = null;
-  @state() private _lastLoadedUrl: string | null = null;
   @state() private _customUrl = '';
 
   private _off?: () => void;
+  private unsubStore?: () => void;
 
   // --- hydrate from store + bus so it's sticky and also reacts live
   private _onDataProviderLoaded = (payload: TapRepoLoadedPayload) => {
@@ -68,7 +68,6 @@ export class AstroPanelTap extends LitElement {
     super.connectedCallback();
     this.unsubStore = dataProviderStore.subscribe((p) => {
       if (p) {
-        // this.dataProvider = p;
         if (!this.dataProviders.includes(p))
           this.dataProviders.push(p)
       }
@@ -82,19 +81,6 @@ export class AstroPanelTap extends LitElement {
     this.unsubStore?.();
     super.disconnectedCallback();
   }
-
-  private unsubStore?: () => void;
-  @state() private filter = '';
-
-  private getDataProviderByURL(url: string): DataProvider {
-    const dataProvider = this.dataProviders.find(p => p.url == url)
-    if (!dataProvider) {
-      console.error('[astro-catalogue-table] load failed:');
-      throw new Error(`Dataprovider ${url} not found`)
-    }
-    return dataProvider
-  }
-
 
   private async _callAddTAPRepo(url: string): Promise<{ dataProvider: DataProvider }> {
     const correlation = cid();
@@ -135,7 +121,6 @@ export class AstroPanelTap extends LitElement {
       // Fill reactive outputs
       this.catalogues = Array.isArray(dataProvider.catalogues) ? dataProvider.catalogues : [];
       this.footprints = Array.isArray(dataProvider.footprints) ? dataProvider.footprints : [];
-      this._lastLoadedUrl = url;
 
       // DOM event for local consumers
       this.dispatchEvent(new CustomEvent('tap-loaded', {
@@ -143,14 +128,11 @@ export class AstroPanelTap extends LitElement {
         detail: { url, catalogues: this.catalogues, footprints: this.footprints }
       }));
 
-      //   // Bus event for app-wide consumers <- this is done in the AstroController
-      //   bus.emit('tap:repoLoaded', { url, dataProvider: dataProvider });
     } catch (err: any) {
       console.error('[astro-panel-tap] load failed:', err);
       alert(`Failed to load TAP repo:\n${url}\n\n${err?.message ?? err}`);
     } finally {
       this._loadingUrl = null;
-      // this._tapRepoLoaded.push(url)
     }
   }
 
@@ -159,8 +141,8 @@ export class AstroPanelTap extends LitElement {
     if (url) this._loadRepo(url);
   }
 
-  renderLoaded(url: string){
-    const p = this.dataProviders.find( p => p.url == url )
+  renderLoaded(url: string) {
+    const p = this.dataProviders.find(p => p.url == url)
     if (!p) return ""
     return html`<div style="margin-top:14px">
           <span class="pill" title="Catalogues count">${p.catalogues.length} catalogues</span>
@@ -180,7 +162,7 @@ export class AstroPanelTap extends LitElement {
             ?disabled=${this._loadingUrl === url}
             @click=${() => this._loadRepo(url)}
             aria-label=${`Load ${url}`}>
-            ${this._loadingUrl === url ? 'Loading…' : (this.dataProviders.find( p => p.url == url ) ? 'Loaded' : 'Load')}
+            ${this._loadingUrl === url ? 'Loading…' : (this.dataProviders.find(p => p.url == url) ? 'Loaded' : 'Load')}
           </button>
         </div>
         ${this.renderLoaded(url)}

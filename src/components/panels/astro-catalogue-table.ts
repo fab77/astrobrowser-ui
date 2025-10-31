@@ -2,7 +2,6 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { bus, cid } from '../../bus';
 import { AstroTapCatalogueLoadedResPayload, Catalogue, DataProvider, Metadata, TapRepoLoadedPayload } from 'src/types';
-import { dataProviderStore } from '../../stores/DataProviderStore';
 import '../mini-panels/astro-mini-metadata'; // <-- make sure path matches where you put it
 
 @customElement('astro-catalogue-table')
@@ -55,25 +54,11 @@ export class AstroCatalogueTable extends LitElement {
     return dataProvider
   }
 
-  // // --- hydrate from store + bus so it's sticky and also reacts live
-  // private _onDataProviderLoaded = (payload: TapRepoLoadedPayload) => {
-  //   const { dataProvider } = payload ?? {};
-  //   if (dataProvider) this.dataProviders.push (dataProvider);
-  // };
-
   connectedCallback(): void {
     super.connectedCallback();
-    // this.unsubStore = dataProviderStore.subscribe((p) => { if (p) {
-    //   // this.dataProvider = p;
-    //   if (!this.dataProviders.includes(p))
-    //     this.dataProviders.push(p)
-    // }  });
-    // bus.on('tap:repoLoaded', this._onDataProviderLoaded);
   }
 
   disconnectedCallback(): void {
-    // bus.off('tap:repoLoaded', this._onDataProviderLoaded);
-    // this.unsubStore?.();
     super.disconnectedCallback();
   }
 

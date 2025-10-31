@@ -105,6 +105,13 @@ export interface FootprintSet {
   [k: string]: any;
 }
 
+export interface AstroSettings {
+  equatorialGrid: boolean;
+  healpixGrod: boolean;
+  insideSphere: boolean;
+}
+
+
 // Request/response for adding a TAP repo (used by astro-panel-tap fallback path)
 export interface AstroTapAddRepoReqPayload {
   cid: string;
@@ -167,5 +174,10 @@ export type AstroTapAddRepoResPayload =
 // Fire-and-forget notification once a TAP repo is effectively available app-wide
 export interface TapRepoLoadedPayload {
   url: string;
+  dataProvider: DataProvider
+}
+
+export interface SettingChangedPayload {
+  equatorialGrid: string;
   dataProvider: DataProvider
 }

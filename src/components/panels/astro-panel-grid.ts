@@ -4,9 +4,10 @@
 // =========================
 
 import { LitElement, html, css } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 
 import { bus, cid } from '../../bus';
+import { AstroState } from 'src/types';
 
 @customElement('astro-panel-grid')
 export class AstroPanelGrid extends LitElement {
@@ -17,33 +18,15 @@ export class AstroPanelGrid extends LitElement {
     top: 45px;
     border-bottom: 1px solid 
   }`;
-  @state() healpix = false;
-  @state() equatorial = false;
-  private _off?: () => void;
+  
+  @property() astroSettings!: AstroState;
 
 
   connectedCallback() {
     super.connectedCallback();
-
-    // Initialise from current engine state
-    const correlation = cid();
-    const offInit = bus.on('astro.get.state:res', ({ cid, state }) => {
-      if (cid !== correlation) return;
-      this.healpix = !!state.healpixGridVisible;
-      this.equatorial = !!state.equatorialGridVisible;
-      offInit();
-    });
-    bus.emit('astro.get.state:req', { cid: correlation });
-
-    // Keep in sync with future engine changes
-    this._off = bus.on('astro.state.changed', ({ state }) => {
-      this.healpix = !!state.healpixGridVisible;
-      this.equatorial = !!state.equatorialGridVisible;
-    });
   }
 
   disconnectedCallback() {
-    this._off?.();
     super.disconnectedCallback();
   }
 
@@ -51,20 +34,20 @@ export class AstroPanelGrid extends LitElement {
     return html`
     <div style="width: 100%">
       <label>
-        <input type="checkbox" .checked=${this.healpix}
+        <input type="checkbox" .checked=${this.astroSettings.healpixGridVisible}
           @change=${(e: any) => {
         const on = !!e.target.checked;
-        this.healpix = on;
+        this.astroSettings.healpixGridVisible = on;
         bus.emit('astro.toggle.healpix', { on });
       }}>
         Healpix grid
       </label>
 
       <label>
-        <input type="checkbox" .checked=${this.equatorial}
+        <input type="checkbox" .checked=${this.astroSettings.equatorialGridVisible}
           @change=${(e: any) => {
         const on = !!e.target.checked;
-        this.equatorial = on;
+        this.astroSettings.equatorialGridVisible = on;
         bus.emit('astro.toggle.equatorial', { on });
       }}>
         Equatorial grid
