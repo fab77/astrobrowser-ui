@@ -1,5 +1,5 @@
 import { AstroViewer, CameraChangedDetail, CatalogueGL, FootprintSetGL, TapRepo, addTAPRepo } from 'astroviewer';
-import { DataProvider, AstroState, IAstroViewerAPI } from './types';
+import { DataProvider, AstroState, IAstroViewerAPI, Catalogue } from './types';
 import { convertTapRepoToDataProvider } from './helpers/tap-converter';
 
 export class AstroViewerAdapter implements IAstroViewerAPI {
@@ -18,8 +18,7 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
         this.lastFov = this.getState().fov
         this.notify();
     }
-    
-    
+
     private init(canvasDomId: string): void {
         if (this._initialised) return;
 
@@ -56,6 +55,26 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
 
     // ---- IAstroViewerAPI implementation ----
     version = 'dev'
+
+    changeCatalogueRA(catalogue: Catalogue, raColumnName: string): void {
+        this.viewer?.changeCatalogueRA(catalogue.astroviewerGlObj as CatalogueGL, raColumnName)
+    }
+
+    changeCatalogueDec(catalogue: Catalogue, decColumnName: string): void {
+        this.viewer?.changeCatalogueDec(catalogue.astroviewerGlObj as CatalogueGL, decColumnName)
+    }
+
+    changeCatalogueColor(catalogue: Catalogue, hexColor: string): void {
+        this.viewer?.changeCatalogueColor(catalogue.astroviewerGlObj as CatalogueGL, hexColor)
+    }
+
+    setCatalogueShapeHue(catalogue: Catalogue, metadataColumnName: string): void {
+        this.viewer?.setCatalogueShapeHue(catalogue.astroviewerGlObj as CatalogueGL, metadataColumnName)
+    }
+    setCatalogueShapeSize(catalogue: Catalogue, metadataColumnName: string): void {
+        this.viewer?.setCatalogueShapeSize(catalogue.astroviewerGlObj as CatalogueGL, metadataColumnName)
+    }
+
     goto(ra: number, dec: number, fov?: number): void {
         this.viewer?.goTo(ra, dec)
     }
@@ -81,7 +100,7 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
     async showCatalogue(catalogue: CatalogueGL): Promise<void> {
         this.viewer?.showCatalogue(catalogue)
     }
-    
+
     async showFootprintSet(fset: FootprintSetGL): Promise<void> {
         this.viewer?.showFootprintSet(fset)
     }

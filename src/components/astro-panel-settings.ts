@@ -1,7 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { bus, cid } from "../bus";
-import { astroSettingsStore } from "../stores/AstroSettingsStore";
 import './panels/astro-panel-grid'
 import './panels/astro-panel-inside-sphere'
 import './panels/astro-panel-tap'

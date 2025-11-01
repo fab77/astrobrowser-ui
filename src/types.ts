@@ -23,8 +23,13 @@ export interface IAstroViewerAPI {
     getState(): AstroState;
     onStateChanged?: (cb: (s: AstroState) => void) => void; // optional subscription bridge
     // catalogue
-    showCatalogue(catalogue: CatalogueGL): void
-    showFootprintSet(fset: FootprintSetGL): void
+    showCatalogue(catalogue: CatalogueGL): void //TODO pass here only Catalogue
+    showFootprintSet(fset: FootprintSetGL): void //TODO pass here only Footprint
+    changeCatalogueRA(catalogue: Catalogue, raColumnName: string): void
+    changeCatalogueDec(catalogue: Catalogue, decColumnName: string): void
+    changeCatalogueColor(catalogue: Catalogue, hexColor: string): void
+    setCatalogueShapeHue(catalogue: Catalogue, metadataColumnName: string): void
+    setCatalogueShapeSize(catalogue: Catalogue, metadataColumnName: string): void
 
 }
 
@@ -49,7 +54,13 @@ export type RA = number; // degrees
 export type DEC = number; // degrees
 
 
-// --- TAP types shared on the bus ---
+export const CATALOGUE_TYPE = 'Catalogue' as const
+export const FOOTPRINTSET_TYPE = 'FootprintSet' as const
+export type DatasetType = typeof CATALOGUE_TYPE | typeof FOOTPRINTSET_TYPE
+export type MiniMetadataPanel = {
+  catOrFoot: Catalogue | FootprintSet
+  datasetType: DatasetType
+}
 
 export type Metadata = {
   name: string

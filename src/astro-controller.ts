@@ -19,8 +19,8 @@ export class AstroController {
       bus.emit('astro.get.state:res', { cid, state });
     });
 
-    // Plots
-    bus.on('astro.plot.catalogue:req', async ({cid, dataProvider, catalogue}) => {
+    // Catalogue Plots
+    bus.on('astro.plot.catalogue:req', async ({ cid, dataProvider, catalogue }) => {
       try {
 
         await this.api.showCatalogue(catalogue.astroviewerGlObj)
@@ -29,15 +29,39 @@ export class AstroController {
           dataProvider: dataProvider,
           catalogue: catalogue
         };
-        
+
         bus.emit('astro.plot.catalogue:res', { cid, ok: true, payload });
         bus.emit('tap:catalogueSelected', { ...payload });
-      } catch  (e: any) {
+      } catch (e: any) {
         bus.emit('astro.plot.catalogue:res', { cid, ok: false, error: e?.message ?? String(e) });
       }
     });
-    
-    bus.on('astro.plot.footprintset:req', async ({cid, dataProvider, footprintSet}) => {
+
+    bus.on('astro.metadata:raChanged', ({ catalogue, column }) => {
+      // delegate to your viewer API here
+      this.api.changeCatalogueRA(catalogue, column)
+      // catalogue.astroviewerGlObj.catalogueProps.changeCatalogueMetaRA(column);
+    });
+
+    bus.on('astro.metadata:decChanged', ({ catalogue, column }) => {
+      this.api.changeCatalogueDec(catalogue, column)
+      // catalogue.astroviewerGlObj.catalogueProps.changeCatalogueMetaDec(column);
+    });
+
+    bus.on('astro.metadata:hueChanged', ({ catalogue, column }) => {
+      this.api.setCatalogueShapeHue(catalogue, column)
+      // catalogue.astroviewerGlObj.changeCatalogueMetaShapeHue(column);
+    });
+
+    bus.on('astro.metadata:sizeChanged', ({ catalogue, column }) => {
+      this.api.setCatalogueShapeSize(catalogue, column)
+      // catalogue.astroviewerGlObj.changeCatalogueMetaShapeSize(column);
+    });
+
+
+
+    // Footprintset Plots
+    bus.on('astro.plot.footprintset:req', async ({ cid, dataProvider, footprintSet }) => {
       try {
 
         await this.api.showFootprintSet(footprintSet.astroviewerGlObj)
@@ -46,14 +70,14 @@ export class AstroController {
           dataProvider: dataProvider,
           footprintSet: footprintSet
         };
-        
+
         bus.emit('astro.plot.footprintset:res', { cid, ok: true, payload });
         bus.emit('tap:footprintsetSelected', { ...payload });
-      } catch  (e: any) {
+      } catch (e: any) {
         bus.emit('astro.plot.footprintset:res', { cid, ok: false, error: e?.message ?? String(e) });
       }
     });
-    
+
     // === TAP integration (bus-only) ===
     bus.on('astro.tap.addRepo:req', async ({ cid, url }) => {
       try {
@@ -73,7 +97,7 @@ export class AstroController {
 
 
     // Broadcast
-    this.api.onStateChanged?.((state) => bus.emit('astro.state.changed', { state }) );
+    this.api.onStateChanged?.((state) => bus.emit('astro.state.changed', { state }));
     bus.emit('astro.ready', { version: this.api.version ?? '0.0.0' });
 
     const state = this.api.getState();

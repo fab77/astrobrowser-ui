@@ -29,13 +29,19 @@ export interface BusEvents {
   'astro.tap.addRepo:res': AstroTapAddRepoResPayload;
   'tap:repoLoaded': TapRepoLoadedPayload;
   
-  'tap:catalogueSelected': { dataProvider: DataProvider, catalogue: Catalogue };
-  'astro.plot.catalogue:req': AstroTapCatalogueLoadedReqPayload
-  'astro.plot.catalogue:res': AstroTapCatalogueLoadedResPayload
-  
   'tap:footprintsetSelected': { dataProvider: DataProvider, footprintSet: FootprintSet };
   'astro.plot.footprintset:req': AstroTaFootprintSetLoadedReqPayload
   'astro.plot.footprintset:res': AstroTaFootprintSetLoadedResPayload
+
+  // Catalogue
+  'tap:catalogueSelected': { dataProvider: DataProvider, catalogue: Catalogue };
+  'astro.plot.catalogue:req': AstroTapCatalogueLoadedReqPayload
+  'astro.plot.catalogue:res': AstroTapCatalogueLoadedResPayload
+
+  'astro.metadata:raChanged': { catalogue: Catalogue; column: string };
+  'astro.metadata:decChanged': { catalogue: Catalogue; column: string };
+  'astro.metadata:hueChanged': { catalogue: Catalogue; column: string };
+  'astro.metadata:sizeChanged': { catalogue: Catalogue; column: string };
 
   // Queries
   'astro.get.state:req': { cid: string };

@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { bus, cid } from '../../bus';
-import { AstroTapCatalogueLoadedResPayload, Catalogue, DataProvider, Metadata, TapRepoLoadedPayload } from 'src/types';
+import { AstroTapCatalogueLoadedResPayload, Catalogue, CATALOGUE_TYPE, DataProvider, Metadata, MiniMetadataPanel } from '../../types';
 import '../mini-panels/astro-mini-metadata'; // <-- make sure path matches where you put it
 
 @customElement('astro-catalogue-table')
@@ -45,8 +45,8 @@ export class AstroCatalogueTable extends LitElement {
   @state() private filter = '';
 
   private getDataProviderByURL(url: string): DataProvider {
-    const dataProvider = this.dataProviders.find( p => p.url == url )
-    if (!dataProvider)  {
+    const dataProvider = this.dataProviders.find(p => p.url == url)
+    if (!dataProvider) {
       const errmsg = `Dataprovider ${url} not found`
       console.error(errmsg);
       throw new Error(errmsg)
@@ -72,13 +72,13 @@ export class AstroCatalogueTable extends LitElement {
   // ---- filtering -----------------------------------------------------------
   private filtered(): Catalogue[] {
     const q = this.filter.trim().toLowerCase();
-    
-    const allCatalogues = this.dataProviders.flatMap( p => p.catalogues)
+
+    const allCatalogues = this.dataProviders.flatMap(p => p.catalogues)
     // if (!q) return this.dataProvider?.catalogues ?? [];
     if (!q) return allCatalogues ?? [];
 
-    
-    return ( allCatalogues ?? []).filter(c => {
+
+    return (allCatalogues ?? []).filter(c => {
       const cols = this.getColumns(c);
       const hay = [
         c.name, c.description, c.provider,
@@ -91,8 +91,14 @@ export class AstroCatalogueTable extends LitElement {
   private openMetadataPanel(c: Catalogue) {
     // spawn a floating mini-panel; doesn’t affect current panel
     const el = document.createElement('astro-mini-metadata') as any;
-    el.catalogue = c;
-    el.providerUrl = c.provider ?? '';
+    if (!c.metadataDetails) return
+
+    const model: MiniMetadataPanel = {
+      catOrFoot: c,
+      datasetType: CATALOGUE_TYPE
+    }
+
+    el.model = model;
     document.body.appendChild(el);
   }
 
@@ -121,10 +127,11 @@ export class AstroCatalogueTable extends LitElement {
       const safeReject = (e: any) => { clearTimeout(t); reject(e); };
 
       // Re-emit using the originals so we don't capture the wrapped ones
-      bus.emit('astro.plot.catalogue:req', { 
-        cid: correlation, 
-        dataProvider: this.getDataProviderByURL(c.provider), 
-        catalogue: c });
+      bus.emit('astro.plot.catalogue:req', {
+        cid: correlation,
+        dataProvider: this.getDataProviderByURL(c.provider),
+        catalogue: c
+      });
     });
   }
 
@@ -145,7 +152,7 @@ export class AstroCatalogueTable extends LitElement {
       console.error('[astro-catalogue-table] load failed:', err);
       alert(`Failed to load Catalogue data for plot:\n${c.name}\n\n${err?.message ?? err}`);
     } finally {
-      
+
     }
   }
 
@@ -159,15 +166,15 @@ export class AstroCatalogueTable extends LitElement {
         />
 
         <div class="meta">
-          ${this.dataProviders?.map (p => p.url
-        ? html`<span class="pill">Repo</span>${p.url}`
-        : html`<span class="muted">Waiting for TAP repo…</span>`)}
+          ${this.dataProviders?.map(p => p.url
+      ? html`<span class="pill">Repo</span>${p.url}`
+      : html`<span class="muted">Waiting for TAP repo…</span>`)}
         </div>
       </header>
 
       ${rows.length === 0
         ? html`<div class="empty">
-            ${this.dataProviders?.map( p => p.url ? html`No catalogues match your filter in ${p.url} .` : 'Load a TAP repository to see catalogues here.')}
+            ${this.dataProviders?.map(p => p.url ? html`No catalogues match your filter in ${p.url} .` : 'Load a TAP repository to see catalogues here.')}
           </div>`
         : html`
           <table>

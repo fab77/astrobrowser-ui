@@ -1,8 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { bus, cid } from '../../bus';
-import { AstroTaFootprintSetLoadedResPayload, FootprintSet, DataProvider, Metadata, TapRepoLoadedPayload } from 'src/types';
-import { dataProviderStore } from '../../stores/DataProviderStore';
+import { AstroTaFootprintSetLoadedResPayload, FootprintSet, DataProvider, Metadata,  MiniMetadataPanel,  FOOTPRINTSET_TYPE } from '../../types';
 import '../mini-panels/astro-mini-metadata'; // <-- make sure path matches where you put it
 
 @customElement('astro-footprintset-table')
@@ -88,11 +87,19 @@ export class AstroFootprintSetTable extends LitElement {
     });
   }
 
+
+// MiniMetadataPanel
   private openMetadataPanel(f: FootprintSet) {
     // spawn a floating mini-panel; doesn’t affect current panel
     const el = document.createElement('astro-mini-metadata') as any;
-    el.footprintset = f;
-    el.providerUrl = f.provider ?? '';
+    if (!f.metadataDetails) return
+    
+    const model: MiniMetadataPanel = {
+      catOrFoot: f,
+      datasetType: FOOTPRINTSET_TYPE
+    }
+
+    el.model = model;
     document.body.appendChild(el);
   }
 
