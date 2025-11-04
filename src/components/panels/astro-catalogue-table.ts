@@ -47,6 +47,8 @@ export class AstroCatalogueTable extends LitElement {
 
   @property() dataProviders: DataProvider[] = []
 
+  @state() activeCatalogues: Catalogue[] = []
+
   // private unsubStore?: () => void;
   @state() private filter = '';
 
@@ -153,6 +155,7 @@ export class AstroCatalogueTable extends LitElement {
         bubbles: true, composed: true,
         detail: { repo: dataProvider.url, catalogues: c }
       }));
+      this.activeCatalogues = [...this.activeCatalogues, c];  // <-- this will trigger the reactivity, not the push
 
     } catch (err: any) {
       console.error('[astro-catalogue-table] load failed:', err);
@@ -169,6 +172,7 @@ export class AstroCatalogueTable extends LitElement {
 
   private async _removeCatalogue(cat: Catalogue) {
     bus.emit('astro.plot.catalogue:remove', { catalogue: cat });
+    this.activeCatalogues = this.activeCatalogues.filter(c => c !== cat);
   }
 
   private _onColorPicked(cat: Catalogue, ev: Event) {
@@ -205,11 +209,38 @@ export class AstroCatalogueTable extends LitElement {
                 <th>Description</th>
                 <th class="nowrap">Repository URL</th>
                 <th class="nowrap">Actions</th>
-                <th>Colour</th>
               </tr>
             </thead>
             <tbody>
               ${rows.map(cat => { 
+                return html`
+                <tr>
+                  <td class="nowrap">
+                    <div><strong>${cat.name}</strong></div>
+                    <div class="subtle">${cat.name}</div>
+                  </td>
+                  <td>${cat.description || html`<span class="muted">—</span>`}</td>
+                  <td class="nowrap"> ${cat.provider || html`<span class="muted">—</span>`}</td>
+                  <td class="nowrap">
+                    <button class="btn" @click=${() => this._plotCatalogue(cat)}>Plot</button>
+                  </td>
+                </tr>
+                
+              `})}
+            </tbody>
+          </table>
+          <table id="activeCatalogues">
+            <thead>
+              <tr>
+                <th class="nowrap">Selected Catalogues</th>
+                <th>Description</th>
+                <th class="nowrap">Repository URL</th>
+                <th class="nowrap">Actions</th>
+                <th>Colour</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.activeCatalogues.map(cat => { 
                 const currentHex = cat.astroviewerGlObj.catalogueProps.shapeColor ?? '#4f46e5';
                 return html`
                 <tr>
@@ -221,7 +252,6 @@ export class AstroCatalogueTable extends LitElement {
                   <td class="nowrap"> ${cat.provider || html`<span class="muted">—</span>`}</td>
                   <td class="nowrap">
                     <button class="btn" @click=${() => this.openMetadataPanel(cat)}>Show metadata</button>
-                    <button class="btn" @click=${() => this._plotCatalogue(cat)}>Plot</button>
                     <button class="btn" @click=${() => this._hideCatalogue(cat)}>Hide</button>
                     <button class="btn" @click=${() => this._removeCatalogue(cat)}>Remove</button>
                   </td>
@@ -236,9 +266,7 @@ export class AstroCatalogueTable extends LitElement {
                     />
                   </div>
                 </td>
-                </tr>
-                
-              `})}
+                </tr>  `})}
             </tbody>
           </table>
         `}
