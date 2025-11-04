@@ -22,10 +22,16 @@ export class AstroCatalogueTable extends LitElement {
       flex:1; padding:6px 8px; border:1px solid #ddd; border-radius:8px;
     }
     .meta { font-size:12px; color:#666; }
+
     table { border-collapse:collapse; width:100%; }
     th, td { text-align:left; padding:8px 10px; border-bottom:1px solid #f0f0f0; vertical-align:top; }
     th { background:#fafafa; position:sticky; top:42px; z-index:1; }
     tbody tr:hover { background:#fcfcff; }
+    
+    .color-cell { display:flex; align-items:center; gap:8px; }
+    .swatch { width:16px; height:16px; border-radius:4px; border:1px solid #ccc; }
+    .color-input { inline-size: 32px; block-size: 24px; border: none; padding: 0; background: transparent; cursor: pointer; }
+
     .pill { display:inline-block; padding:2px 6px; border-radius:999px; background:#f2f2f2; font-size:11px; margin-right:6px; }
     .muted { color:#888; }
     .subtle { font-size:12px; color:#666; }
@@ -156,6 +162,21 @@ export class AstroCatalogueTable extends LitElement {
     }
   }
 
+  private async _hideCatalogue(cat: Catalogue) {
+    const isVisible = !cat.astroviewerGlObj._isVisible
+    bus.emit('astro.plot.catalogue:show', { catalogue: cat, isVisible: isVisible });
+  }
+
+  private async _removeCatalogue(cat: Catalogue) {
+    bus.emit('astro.plot.catalogue:remove', { catalogue: cat });
+  }
+
+  private _onColorPicked(cat: Catalogue, ev: Event) {
+    const hex = (ev.target as HTMLInputElement).value;
+    bus.emit('astro.metadata:colorChanged', { catalogue: cat, hexColor: hex });
+  }
+
+
   // ---- render --------------------------------------------------------------
   render() {
     const rows = this.filtered();
@@ -184,23 +205,40 @@ export class AstroCatalogueTable extends LitElement {
                 <th>Description</th>
                 <th class="nowrap">Repository URL</th>
                 <th class="nowrap">Actions</th>
+                <th>Colour</th>
               </tr>
             </thead>
             <tbody>
-              ${rows.map(c => html`
+              ${rows.map(cat => { 
+                const currentHex = cat.astroviewerGlObj.catalogueProps.shapeColor ?? '#4f46e5';
+                return html`
                 <tr>
                   <td class="nowrap">
-                    <div><strong>${c.name || c.id}</strong></div>
-                    <div class="subtle">${c.name}</div>
+                    <div><strong>${cat.name}</strong></div>
+                    <div class="subtle">${cat.name}</div>
                   </td>
-                  <td>${c.description || html`<span class="muted">—</span>`}</td>
-                  <td class="nowrap"> ${c.provider || html`<span class="muted">—</span>`}</td>
+                  <td>${cat.description || html`<span class="muted">—</span>`}</td>
+                  <td class="nowrap"> ${cat.provider || html`<span class="muted">—</span>`}</td>
                   <td class="nowrap">
-                    <button class="btn" @click=${() => this.openMetadataPanel(c)}>Show metadata</button>
-                    <button class="btn" @click=${() => this._plotCatalogue(c)}>Plot</button>
+                    <button class="btn" @click=${() => this.openMetadataPanel(cat)}>Show metadata</button>
+                    <button class="btn" @click=${() => this._plotCatalogue(cat)}>Plot</button>
+                    <button class="btn" @click=${() => this._hideCatalogue(cat)}>Hide</button>
+                    <button class="btn" @click=${() => this._removeCatalogue(cat)}>Remove</button>
                   </td>
+                  <td>
+                  <div class="color-cell">
+                    <input
+                      class="color-input"
+                      type="color"
+                      .value=${currentHex}
+                      @input=${(e: Event) => this._onColorPicked(cat, e)}
+                      title="Pick colour"
+                    />
+                  </div>
+                </td>
                 </tr>
-              `)}
+                
+              `})}
             </tbody>
           </table>
         `}

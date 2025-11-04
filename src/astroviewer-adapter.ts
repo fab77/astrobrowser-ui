@@ -75,6 +75,14 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
         this.viewer?.setCatalogueShapeSize(catalogue.astroviewerGlObj as CatalogueGL, metadataColumnName)
     }
 
+    hideCatalogue(catalogue: Catalogue, show: boolean) {
+        this.viewer?.hideCatalogue(catalogue.astroviewerGlObj, show)
+    }
+
+    removeCatalogue(catalogue: Catalogue) {
+        this.viewer?.deleteCatalogue(catalogue.astroviewerGlObj)
+    }
+
     goto(ra: number, dec: number, fov?: number): void {
         this.viewer?.goTo(ra, dec)
     }

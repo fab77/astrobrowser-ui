@@ -58,7 +58,17 @@ export class AstroController {
       // catalogue.astroviewerGlObj.changeCatalogueMetaShapeSize(column);
     });
 
+    bus.on('astro.metadata:colorChanged', ({ catalogue, hexColor }) => {
+      this.api.changeCatalogueColor(catalogue, hexColor);
+    });
 
+    bus.on('astro.plot.catalogue:show', ({ catalogue, isVisible }) => {
+      this.api.hideCatalogue(catalogue, isVisible);
+    });
+
+    bus.on('astro.plot.catalogue:remove', ({ catalogue}) => {
+      this.api.removeCatalogue(catalogue);
+    });
 
     // Footprintset Plots
     bus.on('astro.plot.footprintset:req', async ({ cid, dataProvider, footprintSet }) => {

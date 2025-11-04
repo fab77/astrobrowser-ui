@@ -24,12 +24,17 @@ export interface IAstroViewerAPI {
     onStateChanged?: (cb: (s: AstroState) => void) => void; // optional subscription bridge
     // catalogue
     showCatalogue(catalogue: CatalogueGL): void //TODO pass here only Catalogue
-    showFootprintSet(fset: FootprintSetGL): void //TODO pass here only Footprint
     changeCatalogueRA(catalogue: Catalogue, raColumnName: string): void
     changeCatalogueDec(catalogue: Catalogue, decColumnName: string): void
     changeCatalogueColor(catalogue: Catalogue, hexColor: string): void
     setCatalogueShapeHue(catalogue: Catalogue, metadataColumnName: string): void
     setCatalogueShapeSize(catalogue: Catalogue, metadataColumnName: string): void
+    hideCatalogue(catalogue: Catalogue, show: boolean): void
+    removeCatalogue(catalogue: Catalogue): void
+    
+    // footprintset
+    showFootprintSet(fset: FootprintSetGL): void //TODO pass here only Footprint
+    
 
 }
 

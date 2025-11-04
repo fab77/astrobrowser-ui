@@ -42,6 +42,10 @@ export interface BusEvents {
   'astro.metadata:decChanged': { catalogue: Catalogue; column: string };
   'astro.metadata:hueChanged': { catalogue: Catalogue; column: string };
   'astro.metadata:sizeChanged': { catalogue: Catalogue; column: string };
+  'astro.metadata:colorChanged': { catalogue: Catalogue; hexColor: string };
+  'astro.plot.catalogue:show': { catalogue: Catalogue; isVisible: boolean };
+  'astro.plot.catalogue:remove': { catalogue: Catalogue };
+
 
   // Queries
   'astro.get.state:req': { cid: string };
