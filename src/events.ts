@@ -34,13 +34,13 @@ export interface BusEvents {
   'astro.plot.footprintset:res': AstroTaFootprintSetLoadedResPayload
 
   // Catalogue
-  'tap:catalogueSelected': { dataProvider: DataProvider, catalogue: Catalogue };
+  // 'tap:catalogueSelected': { dataProvider: DataProvider, catalogue: Catalogue };
   'astro.plot.catalogue:req': AstroTapCatalogueLoadedReqPayload
   'astro.plot.catalogue:res': AstroTapCatalogueLoadedResPayload
 
   'astro.metadata:raChanged': { catalogue: Catalogue; column: string };
   'astro.metadata:decChanged': { catalogue: Catalogue; column: string };
-  'astro.metadata:hueChanged': { catalogue: Catalogue; column: string };
+  'astro.metadata:hueChanged': { catalogue: Catalogue; column: string | undefined };
   'astro.metadata:sizeChanged': { catalogue: Catalogue; column: string };
   'astro.metadata:colorChanged': { catalogue: Catalogue; hexColor: string };
   'astro.plot.catalogue:show': { catalogue: Catalogue; isVisible: boolean };

@@ -2,7 +2,7 @@ import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import './panels/astro-catalogue-table';
 import './panels/astro-footprintset-table';
-import { DataProvider, TapRepoLoadedPayload } from 'src/types';
+import { AstroTapCatalogueLoadedResPayload, DataProvider, TapRepoLoadedPayload } from 'src/types';
 import { dataProviderStore } from '../stores/DataProviderStore';
 import { bus } from '../bus';
 
@@ -36,6 +36,10 @@ export class AstroPanelExplore extends LitElement {
       }
     });
     bus.on('tap:repoLoaded', this._onDataProviderLoaded);
+
+    // bus.on('astro.plot.catalogue:res', (msg: AstroTapCatalogueLoadedResPayload) => {
+
+    // })
   }
 
   disconnectedCallback(): void {

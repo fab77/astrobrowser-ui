@@ -1,5 +1,6 @@
 // src/astro-controller.ts
 import { bus } from './bus';
+import { dataProviderStore } from './stores/DataProviderStore';
 import type { Catalogue, DataProvider, FootprintSet, IAstroViewerAPI } from './types';
 
 export class AstroController {
@@ -31,35 +32,40 @@ export class AstroController {
         };
 
         bus.emit('astro.plot.catalogue:res', { cid, ok: true, payload });
-        bus.emit('tap:catalogueSelected', { ...payload });
+        // bus.emit('tap:catalogueSelected', { ...payload });
       } catch (e: any) {
         bus.emit('astro.plot.catalogue:res', { cid, ok: false, error: e?.message ?? String(e) });
       }
     });
 
-    bus.on('astro.metadata:raChanged', ({ catalogue, column }) => {
-      // delegate to your viewer API here
-      this.api.changeCatalogueRA(catalogue, column)
-      // catalogue.astroviewerGlObj.catalogueProps.changeCatalogueMetaRA(column);
+    bus.on('astro.metadata:raChanged', ({ catalogue, column }) => {      
+      dataProviderStore.removeFromActiveCatalogues(catalogue)
+      catalogue = this.api.changeCatalogueRA(catalogue, column) // <-- delegate to your viewer API here
+      dataProviderStore.addToActiveCatalogues(catalogue)
     });
 
     bus.on('astro.metadata:decChanged', ({ catalogue, column }) => {
-      this.api.changeCatalogueDec(catalogue, column)
-      // catalogue.astroviewerGlObj.catalogueProps.changeCatalogueMetaDec(column);
+      dataProviderStore.removeFromActiveCatalogues(catalogue)
+      catalogue = this.api.changeCatalogueDec(catalogue, column)
+      dataProviderStore.addToActiveCatalogues(catalogue)
     });
 
     bus.on('astro.metadata:hueChanged', ({ catalogue, column }) => {
-      this.api.setCatalogueShapeHue(catalogue, column)
-      // catalogue.astroviewerGlObj.changeCatalogueMetaShapeHue(column);
+      // dataProviderStore.removeFromActiveCatalogues(catalogue)
+      catalogue = this.api.setCatalogueShapeHue(catalogue, column)
+      // dataProviderStore.addToActiveCatalogues(catalogue)
     });
 
     bus.on('astro.metadata:sizeChanged', ({ catalogue, column }) => {
-      this.api.setCatalogueShapeSize(catalogue, column)
-      // catalogue.astroviewerGlObj.changeCatalogueMetaShapeSize(column);
+      // dataProviderStore.removeFromActiveCatalogues(catalogue)
+      catalogue = this.api.setCatalogueShapeSize(catalogue, column)
+      // dataProviderStore.addToActiveCatalogues(catalogue)
     });
 
     bus.on('astro.metadata:colorChanged', ({ catalogue, hexColor }) => {
-      this.api.changeCatalogueColor(catalogue, hexColor);
+      dataProviderStore.removeFromActiveCatalogues(catalogue)
+      catalogue = this.api.changeCatalogueColor(catalogue, hexColor);
+      dataProviderStore.addToActiveCatalogues(catalogue)
     });
 
     bus.on('astro.plot.catalogue:show', ({ catalogue, isVisible }) => {

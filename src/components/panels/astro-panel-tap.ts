@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state, property } from 'lit/decorators.js';
 import { bus, cid } from '../../bus';
-import type { Catalogue, FootprintSet, AstroTapAddRepoResPayload, DataProvider, TapRepoLoadedPayload } from '../../types';
+import type { AstroTapAddRepoResPayload, DataProvider, TapRepoLoadedPayload } from '../../types';
 import { dataProviderStore } from '../../stores/DataProviderStore';
 
 @customElement('astro-panel-tap')
@@ -46,10 +46,6 @@ export class AstroPanelTap extends LitElement {
 
   // @state() _tapRepoLoaded: string[] = []
   @state() dataProviders: DataProvider[] = []
-
-  /** Outputs to fill after loading */
-  @state() catalogues: Catalogue[] = [];
-  @state() footprints: FootprintSet[] = [];
 
   /** Internal UI state */
   @state() private _loadingUrl: string | null = null;
@@ -117,16 +113,6 @@ export class AstroPanelTap extends LitElement {
     try {
       const { dataProvider } = await this._callAddTAPRepo(url);
       dataProviderStore.add(dataProvider)
-
-      // Fill reactive outputs
-      this.catalogues = Array.isArray(dataProvider.catalogues) ? dataProvider.catalogues : [];
-      this.footprints = Array.isArray(dataProvider.footprints) ? dataProvider.footprints : [];
-
-      // DOM event for local consumers
-      this.dispatchEvent(new CustomEvent('tap-loaded', {
-        bubbles: true, composed: true,
-        detail: { url, catalogues: this.catalogues, footprints: this.footprints }
-      }));
 
     } catch (err: any) {
       console.error('[astro-panel-tap] load failed:', err);

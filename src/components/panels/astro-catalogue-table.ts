@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { bus, cid } from '../../bus';
 import { AstroTapCatalogueLoadedResPayload, Catalogue, CATALOGUE_TYPE, DataProvider, Metadata, MiniMetadataPanel } from '../../types';
 import '../mini-panels/astro-mini-metadata'; // <-- make sure path matches where you put it
+import { dataProviderStore } from '../../stores/DataProviderStore';
 
 @customElement('astro-catalogue-table')
 export class AstroCatalogueTable extends LitElement {
@@ -45,7 +46,8 @@ export class AstroCatalogueTable extends LitElement {
     .btn:hover { background:#f8f8f8; }
   `;
 
-  @property() dataProviders: DataProvider[] = []
+  @property({ attribute: false })
+  dataProviders: DataProvider[] = []
 
   @state() activeCatalogues: Catalogue[] = []
 
@@ -64,6 +66,7 @@ export class AstroCatalogueTable extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
+    this.activeCatalogues = dataProviderStore.getAllActiveCatalogues()
   }
 
   disconnectedCallback(): void {
@@ -150,12 +153,12 @@ export class AstroCatalogueTable extends LitElement {
       const { dataProvider, catalogue } = await this._callPlotCatalogue(c)
 
       console.log(`Catalogue ${catalogue.name} loaded from ${dataProvider.url}`)
-      // DOM event for local consumers
-      this.dispatchEvent(new CustomEvent('tap:catalogueSelected', {
-        bubbles: true, composed: true,
-        detail: { repo: dataProvider.url, catalogues: c }
-      }));
-      this.activeCatalogues = [...this.activeCatalogues, c];  // <-- this will trigger the reactivity, not the push
+      console.log(`Catalogue hue column name ${catalogue.astroviewerGlObj.catalogueProps.shapeHueColumn?.name} `)
+      
+      // this.activeCatalogues = [...this.activeCatalogues, c];  // <-- this will trigger the reactivity, not the push
+      // this.activeCatalogues = dataProviderStore.addToActiveCatalogues(dataProvider, catalogue)
+      this.activeCatalogues = []
+      this.activeCatalogues = dataProviderStore.addToActiveCatalogues(catalogue)
 
     } catch (err: any) {
       console.error('[astro-catalogue-table] load failed:', err);
@@ -172,7 +175,9 @@ export class AstroCatalogueTable extends LitElement {
 
   private async _removeCatalogue(cat: Catalogue) {
     bus.emit('astro.plot.catalogue:remove', { catalogue: cat });
-    this.activeCatalogues = this.activeCatalogues.filter(c => c !== cat);
+    // this.activeCatalogues = this.activeCatalogues.filter(c => c !== cat);
+    // this.activeCatalogues = dataProviderStore.removeFromActiveCatalogues(cat.provider, cat)
+    this.activeCatalogues = dataProviderStore.removeFromActiveCatalogues(cat)
   }
 
   private _onColorPicked(cat: Catalogue, ev: Event) {
@@ -212,8 +217,8 @@ export class AstroCatalogueTable extends LitElement {
               </tr>
             </thead>
             <tbody>
-              ${rows.map(cat => { 
-                return html`
+              ${rows.map(cat => {
+          return html`
                 <tr>
                   <td class="nowrap">
                     <div><strong>${cat.name}</strong></div>
@@ -240,9 +245,9 @@ export class AstroCatalogueTable extends LitElement {
               </tr>
             </thead>
             <tbody>
-              ${this.activeCatalogues.map(cat => { 
-                const currentHex = cat.astroviewerGlObj.catalogueProps.shapeColor ?? '#4f46e5';
-                return html`
+              ${this.activeCatalogues.map(cat => {
+            const currentHex = cat.astroviewerGlObj.catalogueProps.shapeColor ?? '#4f46e5';
+            return html`
                 <tr>
                   <td class="nowrap">
                     <div><strong>${cat.name}</strong></div>

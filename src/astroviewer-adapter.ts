@@ -56,23 +56,38 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
     // ---- IAstroViewerAPI implementation ----
     version = 'dev'
 
-    changeCatalogueRA(catalogue: Catalogue, raColumnName: string): void {
-        this.viewer?.changeCatalogueRA(catalogue.astroviewerGlObj as CatalogueGL, raColumnName)
+    changeCatalogueRA(catalogue: Catalogue, raColumnName: string): Catalogue {
+        if (!this.viewer) throw new Error(`astro-viewer is undefined": ${this.viewer}`)
+        const catGL = this.viewer.changeCatalogueRA(catalogue.astroviewerGlObj as CatalogueGL, raColumnName)
+        catalogue.astroviewerGlObj = catGL
+        return catalogue
     }
 
-    changeCatalogueDec(catalogue: Catalogue, decColumnName: string): void {
-        this.viewer?.changeCatalogueDec(catalogue.astroviewerGlObj as CatalogueGL, decColumnName)
+    changeCatalogueDec(catalogue: Catalogue, decColumnName: string): Catalogue {
+        if (!this.viewer) throw new Error(`astro-viewer is undefined": ${this.viewer}`)
+        const catGL = this.viewer?.changeCatalogueDec(catalogue.astroviewerGlObj as CatalogueGL, decColumnName)
+        catalogue.astroviewerGlObj = catGL
+        return catalogue
     }
 
-    changeCatalogueColor(catalogue: Catalogue, hexColor: string): void {
-        this.viewer?.changeCatalogueColor(catalogue.astroviewerGlObj as CatalogueGL, hexColor)
+    changeCatalogueColor(catalogue: Catalogue, hexColor: string): Catalogue {
+        if (!this.viewer) throw new Error(`astro-viewer is undefined": ${this.viewer}`)
+        const catGL = this.viewer?.changeCatalogueColor(catalogue.astroviewerGlObj as CatalogueGL, hexColor)
+        catalogue.astroviewerGlObj = catGL
+        return catalogue
     }
 
-    setCatalogueShapeHue(catalogue: Catalogue, metadataColumnName: string): void {
-        this.viewer?.setCatalogueShapeHue(catalogue.astroviewerGlObj as CatalogueGL, metadataColumnName)
+    setCatalogueShapeHue(catalogue: Catalogue, metadataColumnName: string): Catalogue {
+        if (!this.viewer) throw new Error(`astro-viewer is undefined": ${this.viewer}`)
+        const catGL = this.viewer?.setCatalogueShapeHue(catalogue.astroviewerGlObj as CatalogueGL, metadataColumnName)
+        catalogue.astroviewerGlObj = catGL
+        return catalogue
     }
-    setCatalogueShapeSize(catalogue: Catalogue, metadataColumnName: string): void {
-        this.viewer?.setCatalogueShapeSize(catalogue.astroviewerGlObj as CatalogueGL, metadataColumnName)
+    setCatalogueShapeSize(catalogue: Catalogue, metadataColumnName: string): Catalogue {
+        if (!this.viewer) throw new Error(`astro-viewer is undefined": ${this.viewer}`)
+        const catGL = this.viewer?.setCatalogueShapeSize(catalogue.astroviewerGlObj as CatalogueGL, metadataColumnName)
+        catalogue.astroviewerGlObj = catGL
+        return catalogue
     }
 
     hideCatalogue(catalogue: Catalogue, show: boolean) {

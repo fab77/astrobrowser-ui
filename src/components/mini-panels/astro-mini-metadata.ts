@@ -2,6 +2,8 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { CATALOGUE_TYPE, type Catalogue, type FootprintSet, type MiniMetadataPanel } from '../../types';
 import { bus } from '../../bus';
+import { dataProviderStore } from '../../stores/DataProviderStore';
+
 
 const UCD_RA = 'pos.eq.ra';
 const UCD_DEC = 'pos.eq.dec';
@@ -57,25 +59,38 @@ export class AstroMiniMetadata extends LitElement {
     // Prepopulate from metadata if present
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const cat = this.model.catOrFoot as Catalogue;
-      const raName = cat.metadataDetails?.posEqRAMetaColumns?.[0]?.name;
-
-      const decName = cat.metadataDetails?.posEqDecMetaColumns?.[0]?.name;
+      
+      // const raName = cat.metadataDetails?.posEqRAMetaColumns?.[0]?.name;
+      // const decName = cat.metadataDetails?.posEqDecMetaColumns?.[0]?.name;
+      const raName = cat.astroviewerGlObj.catalogueProps.raColumn.name
       if (raName) {
         this.selectedRa = raName;
-        this.defaultRa = raName;
+        this.defaultRa = cat.metadataDetails?.posEqRAMetaColumns?.[0]?.name;
       }
+
+      const decName = cat.astroviewerGlObj.catalogueProps.decColumn.name
       if (decName) {
         this.selectedDec = decName;
-        this.defaultDec = decName;
+        this.defaultDec = cat.metadataDetails?.posEqDecMetaColumns?.[0]?.name;
       }
+
+      const sizeName = cat.astroviewerGlObj.catalogueProps.shapeSizeColumn?.name
+      if (sizeName) {
+        this.selectedShape = sizeName;
+      }
+
+      const hueName = cat.astroviewerGlObj.catalogueProps.shapeHueColumn?.name
+      if(hueName) {
+        this.selectedHue = hueName
+      }
+
     } else {
       const foot = this.model.catOrFoot as FootprintSet;
-      const outlineName =
-        foot.metadataDetails?.pgSphereMetaColumns?.[0]?.name ??
-        foot.metadataDetails?.sRegionMetaColumns?.[0]?.name;
+      // const outlineName = foot.metadataDetails?.pgSphereMetaColumns?.[0]?.name ?? foot.metadataDetails?.sRegionMetaColumns?.[0]?.name;
+      const outlineName = foot.astroviewerGlObj.footprintsetProps.nameColumn?.name
       if (outlineName) {
         this.selectedOutline = outlineName;
-        this.defaultOutline = outlineName;
+        this.defaultOutline = foot.metadataDetails?.pgSphereMetaColumns?.[0]?.name ?? foot.metadataDetails?.sRegionMetaColumns?.[0]?.name;;
       }
     }
   }
@@ -140,17 +155,7 @@ export class AstroMiniMetadata extends LitElement {
         column: this.selectedRa
       });
     }
-    // (Optional) emit a bus or custom event if you want to notify the app:
-    // this.dispatchEvent(
-    //   new CustomEvent('ra-column-changed', {
-    //     bubbles: true,
-    //     composed: true,
-    //     detail: {
-    //       hue: this.selectedRa,
-    //       catalogue: this.model.catOrFoot as Catalogue
-    //     }
-    //   })
-    // );
+  
   }
 
   private onDecSelect(e: Event) {
@@ -163,83 +168,50 @@ export class AstroMiniMetadata extends LitElement {
     if (!this.selectedDec) return
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const cat = this.model.catOrFoot as Catalogue
-      // cat.astroviewerGlObj.catalogueProps.changeCatalogueMetaDec(this.selectedDec) // <--- this shall be handled in the adapter via emit
       bus.emit('astro.metadata:decChanged', {
         catalogue: cat,
         column: this.selectedDec
       });
     }
-    // (Optional) emit a bus or custom event if you want to notify the app:
-    // this.dispatchEvent(
-    //   new CustomEvent('dec-column-changed', {
-    //     bubbles: true,
-    //     composed: true,
-    //     detail: {
-    //       hue: this.selectedDec,
-    //       catalogue: this.model.catOrFoot as Catalogue
-    //     }
-    //   })
-    // );
+
   }
 
   private onHueSelect(e: Event) {
     const select = e.target as HTMLSelectElement;
     const value = select.value;
-    this.selectedHue = value === '-' ? undefined : value;
+    this.selectedHue = value === '-' ? "STANDARD_HUE" : value;
 
     console.log('[astro-mini-metadata] Hue column changed:', this.selectedHue);
 
-    if (!this.selectedHue) return
+    // if (!this.selectedHue) return
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const cat = this.model.catOrFoot as Catalogue
-      // this should call astroviewer-adapter.setCatalogueShapeHue()
-      // cat.astroviewerGlObj.changeCatalogueMetaShapeHue(this.selectedHue) // <--- this shall be handled in the adapter via emit
+    
       bus.emit('astro.metadata:hueChanged', {
         catalogue: cat,
         column: this.selectedHue
       });
     }
-    // (Optional) emit a bus or custom event if you want to notify the app:
-    // this.dispatchEvent(
-    //   new CustomEvent('hue-column-changed', {
-    //     bubbles: true,
-    //     composed: true,
-    //     detail: {
-    //       hue: this.selectedHue,
-    //       catalogue: this.model.catOrFoot as Catalogue
-    //     }
-    //   })
-    // );
+
   }
 
   private onShapeSizeSelect(e: Event) {
     const select = e.target as HTMLSelectElement;
     const value = select.value;
-    this.selectedShape = value === '-' ? undefined : value;
+    this.selectedShape = value === '-' ? "STANDARD_SIZE" : value;
 
     console.log('[astro-mini-metadata] Hue column changed:', this.selectedShape);
 
-    if (!this.selectedShape) return
+    // if (!this.selectedShape) return
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const cat = this.model.catOrFoot as Catalogue
-      // this should call astroviewer-adapter.setCatalogueShapeSize()
-      // cat.astroviewerGlObj.changeCatalogueMetaShapeSize(this.selectedShape) // <--- this shall be handled in the adapter via emit
+      
       bus.emit('astro.metadata:sizeChanged', {
         catalogue: cat,
         column: this.selectedShape
       });
     }
-    // (Optional) emit a bus or custom event if you want to notify the app:
-    // this.dispatchEvent(
-    //   new CustomEvent('size-column-changed', {
-    //     bubbles: true,
-    //     composed: true,
-    //     detail: {
-    //       hue: this.selectedShape,
-    //       catalogue: this.model.catOrFoot as Catalogue
-    //     }
-    //   })
-    // );
+
   }
 
   render() {
