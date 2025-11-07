@@ -3,7 +3,7 @@
 // Central type-safe event map for PubSub between panels and AstroViewer
 // =========================
 
-import { AstroState, AstroTaFootprintSetLoadedReqPayload, AstroTaFootprintSetLoadedResPayload, AstroTapAddRepoReqPayload, AstroTapAddRepoResPayload, AstroTapCatalogueLoadedReqPayload, AstroTapCatalogueLoadedResPayload, Catalogue, DataProvider, FootprintSet, TabKey, TapRepoLoadedPayload } from "./types";
+import { AstroEntity, AstroState, AstroTaFootprintSetLoadedReqPayload, AstroTaFootprintSetLoadedResPayload, AstroTapAddRepoReqPayload, AstroTapAddRepoResPayload, AstroTapCatalogueLoadedReqPayload, AstroTapCatalogueLoadedResPayload, DataProvider, TabKey, TapRepoLoadedPayload } from "./types";
 
 
 
@@ -29,7 +29,7 @@ export interface BusEvents {
   'astro.tap.addRepo:res': AstroTapAddRepoResPayload;
   'tap:repoLoaded': TapRepoLoadedPayload;
   
-  'tap:footprintsetSelected': { dataProvider: DataProvider, footprintSet: FootprintSet };
+  'tap:footprintsetSelected': { dataProvider: DataProvider, footprintSet: AstroEntity };
   'astro.plot.footprintset:req': AstroTaFootprintSetLoadedReqPayload
   'astro.plot.footprintset:res': AstroTaFootprintSetLoadedResPayload
 
@@ -38,13 +38,13 @@ export interface BusEvents {
   'astro.plot.catalogue:req': AstroTapCatalogueLoadedReqPayload
   'astro.plot.catalogue:res': AstroTapCatalogueLoadedResPayload
 
-  'astro.metadata:raChanged': { catalogue: Catalogue; column: string };
-  'astro.metadata:decChanged': { catalogue: Catalogue; column: string };
-  'astro.metadata:hueChanged': { catalogue: Catalogue; column: string | undefined };
-  'astro.metadata:sizeChanged': { catalogue: Catalogue; column: string };
-  'astro.metadata:colorChanged': { catalogue: Catalogue; hexColor: string };
-  'astro.plot.catalogue:show': { catalogue: Catalogue; isVisible: boolean };
-  'astro.plot.catalogue:remove': { catalogue: Catalogue };
+  'astro.metadata:raChanged': { catalogue: AstroEntity; column: string };
+  'astro.metadata:decChanged': { catalogue: AstroEntity; column: string };
+  'astro.metadata:hueChanged': { catalogue: AstroEntity; column: string | undefined };
+  'astro.metadata:sizeChanged': { catalogue: AstroEntity; column: string };
+  'astro.metadata:colorChanged': { catalogue: AstroEntity; hexColor: string };
+  'astro.plot.catalogue:show': { catalogue: AstroEntity; isVisible: boolean };
+  'astro.plot.catalogue:remove': { catalogue: AstroEntity };
 
 
   // Queries

@@ -1,8 +1,8 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { CATALOGUE_TYPE, type Catalogue, type FootprintSet, type MiniMetadataPanel } from '../../types';
+import { CATALOGUE_TYPE, FOOTPRINTSET_TYPE, type MiniMetadataPanel } from '../../types';
 import { bus } from '../../bus';
-import { dataProviderStore } from '../../stores/DataProviderStore';
+import { ColumnType, MetadataColumn } from 'astroviewer';
 
 
 const UCD_RA = 'pos.eq.ra';
@@ -56,41 +56,38 @@ export class AstroMiniMetadata extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
 
+    const glObj = this.model.catOrFoot.astroviewerGlObj
+    if (!glObj) throw new Error(`No GL object associated to ${this.model.catOrFoot.name}`)
     // Prepopulate from metadata if present
     if (this.model.datasetType === CATALOGUE_TYPE) {
-      const cat = this.model.catOrFoot as Catalogue;
-      
-      // const raName = cat.metadataDetails?.posEqRAMetaColumns?.[0]?.name;
-      // const decName = cat.metadataDetails?.posEqDecMetaColumns?.[0]?.name;
-      const raName = cat.astroviewerGlObj.catalogueProps.raColumn.name
+
+      const raName = glObj?.metadataManager.selectedRaColumn?.name
       if (raName) {
         this.selectedRa = raName;
-        this.defaultRa = cat.metadataDetails?.posEqRAMetaColumns?.[0]?.name;
+        this.defaultRa = glObj?.metadataManager?.selectedRaColumn?.name;
       }
 
-      const decName = cat.astroviewerGlObj.catalogueProps.decColumn.name
+      const decName = glObj?.metadataManager?.selectedDecColumn?.name
       if (decName) {
         this.selectedDec = decName;
-        this.defaultDec = cat.metadataDetails?.posEqDecMetaColumns?.[0]?.name;
+        this.defaultDec = glObj?.metadataManager?.selectedDecColumn?.name
       }
 
-      const sizeName = cat.astroviewerGlObj.catalogueProps.shapeSizeColumn?.name
+      const sizeName = glObj?.metadataManager?.selectedShapeColumn?.name
       if (sizeName) {
         this.selectedShape = sizeName;
       }
 
-      const hueName = cat.astroviewerGlObj.catalogueProps.shapeHueColumn?.name
-      if(hueName) {
+      const hueName = glObj?.metadataManager?.selectedHueColumn?.name
+      if (hueName) {
         this.selectedHue = hueName
       }
 
     } else {
-      const foot = this.model.catOrFoot as FootprintSet;
-      // const outlineName = foot.metadataDetails?.pgSphereMetaColumns?.[0]?.name ?? foot.metadataDetails?.sRegionMetaColumns?.[0]?.name;
-      const outlineName = foot.astroviewerGlObj.footprintsetProps.nameColumn?.name
+      const outlineName = glObj?.metadataManager?.selectedOutlineColumn?.name
       if (outlineName) {
         this.selectedOutline = outlineName;
-        this.defaultOutline = foot.metadataDetails?.pgSphereMetaColumns?.[0]?.name ?? foot.metadataDetails?.sRegionMetaColumns?.[0]?.name;;
+        this.defaultOutline = glObj?.metadataManager?.selectedOutlineColumn?.name;
       }
     }
   }
@@ -100,11 +97,11 @@ export class AstroMiniMetadata extends LitElement {
   };
 
   // helper: is this column "position-ish"?
-  private isPosColumn(col: any): boolean {
+  private isPosColumn(col: MetadataColumn): boolean {
     return (
-      (col.ucd ?? '').includes(UCD_RA) ||
-      (col.ucd ?? '').includes(UCD_DEC) ||
-      col?.ucd === UCD_OUTLINE
+      col.columnType == ColumnType.GEOM_DEC || 
+      col.columnType == ColumnType.GEOM_RA || 
+      col.columnType == ColumnType.GEOM_FOOTPRINT
     );
   }
 
@@ -148,14 +145,14 @@ export class AstroMiniMetadata extends LitElement {
 
     if (!this.selectedRa) return
     if (this.model.datasetType === CATALOGUE_TYPE) {
-      const cat = this.model.catOrFoot as Catalogue
+      const cat = this.model.catOrFoot
       // cat.astroviewerGlObj.catalogueProps.changeCatalogueMetaRA(this.selectedRa) // <--- this shall be handled in the adapter via emit
       bus.emit('astro.metadata:raChanged', {
         catalogue: cat,
         column: this.selectedRa
       });
     }
-  
+
   }
 
   private onDecSelect(e: Event) {
@@ -167,12 +164,30 @@ export class AstroMiniMetadata extends LitElement {
 
     if (!this.selectedDec) return
     if (this.model.datasetType === CATALOGUE_TYPE) {
-      const cat = this.model.catOrFoot as Catalogue
+      const cat = this.model.catOrFoot
       bus.emit('astro.metadata:decChanged', {
         catalogue: cat,
         column: this.selectedDec
       });
     }
+
+  }
+  
+  private onOutlineSelect(e: Event) {
+    // const select = e.target as HTMLSelectElement;
+    // const value = select.value;
+    // this.selectedOutline = value === '-' ? undefined : value;
+
+    // console.log('[astro-mini-metadata] Outline column changed:', this.selectedOutline);
+
+    // if (!this.selectedOutline) return
+    // if (this.model.datasetType === FOOTPRINTSET_TYPE) {
+    //   const foot = this.model.catOrFoot
+    //   bus.emit('astro.metadata:outlineChanged', {
+    //     catalogue: foot,
+    //     column: this.selectedOutline
+    //   });
+    // }
 
   }
 
@@ -185,14 +200,13 @@ export class AstroMiniMetadata extends LitElement {
 
     // if (!this.selectedHue) return
     if (this.model.datasetType === CATALOGUE_TYPE) {
-      const cat = this.model.catOrFoot as Catalogue
-    
+      const cat = this.model.catOrFoot
+
       bus.emit('astro.metadata:hueChanged', {
         catalogue: cat,
         column: this.selectedHue
       });
     }
-
   }
 
   private onShapeSizeSelect(e: Event) {
@@ -204,8 +218,8 @@ export class AstroMiniMetadata extends LitElement {
 
     // if (!this.selectedShape) return
     if (this.model.datasetType === CATALOGUE_TYPE) {
-      const cat = this.model.catOrFoot as Catalogue
-      
+      const cat = this.model.catOrFoot
+
       bus.emit('astro.metadata:sizeChanged', {
         catalogue: cat,
         column: this.selectedShape
@@ -215,13 +229,17 @@ export class AstroMiniMetadata extends LitElement {
   }
 
   render() {
-    const cols = this.model?.catOrFoot?.metadataDetails?.metadataList || [];
+    
+    const glObj = this.model?.catOrFoot?.astroviewerGlObj
+    if (!glObj) throw new Error(`No GL object associated to ${this.model.catOrFoot.name}`)
 
+
+    const raColumns = glObj.metadataManager.raColumnList || []
     let selectRATemplate = html``;
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const options: unknown[] = [];
-      for (const col of cols) {
-        if (!(col.ucd ?? '').includes(UCD_RA)) continue
+      for (const col of raColumns) {
+        // if (!(col.ucd ?? '').includes(UCD_RA)) continue
         const isSelected = col.name === this.selectedRa;
         options.push(
           html`<option ?selected=${isSelected} value=${col.name}>${col.name}</option>`
@@ -237,12 +255,14 @@ export class AstroMiniMetadata extends LitElement {
     }
     const selectRAContainer = html`<div>${selectRATemplate}</div>`;
 
+
+    const decColumns = glObj.metadataManager.decColumnList || []
     let selectDecTemplate = html``;
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const options: unknown[] = [];
 
-      for (const col of cols) {
-        if (!(col.ucd ?? '').includes(UCD_DEC)) continue
+      for (const col of decColumns) {
+        // if (!(col.ucd ?? '').includes(UCD_DEC)) continue
         const isSelected = col.name === this.selectedDec;
         options.push(
           html`<option ?selected=${isSelected} value=${col.name}>${col.name}</option>`
@@ -259,12 +279,14 @@ export class AstroMiniMetadata extends LitElement {
     const selectDecContainer = html`<div>${selectDecTemplate}</div>`;
 
 
+
+    const shapeColumns = glObj.metadataManager.shapeColumnList || []
     let selectShapeTemplate = html``;
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const options: unknown[] = [];
 
       let hasSelected = false
-      for (const col of cols) {
+      for (const col of shapeColumns) {
         const isSelected = col.name === this.selectedShape;
         if (isSelected) hasSelected = true;
         options.push(
@@ -288,12 +310,13 @@ export class AstroMiniMetadata extends LitElement {
     const selectShapeContainer = html`<div>${selectShapeTemplate}</div>`;
 
 
+    const hueColumns = glObj.metadataManager.hueColumnList || []
     let selectHueTemplate = html``;
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const options: unknown[] = [];
 
       let hasSelected = false
-      for (const col of cols) {
+      for (const col of hueColumns) {
         const isSelected = col.name === this.selectedHue
         if (isSelected) hasSelected = true;
         options.push(
@@ -317,7 +340,42 @@ export class AstroMiniMetadata extends LitElement {
     const selectHueContainer = html`<div>${selectHueTemplate}</div>`;
 
 
+    const outlineColumns = glObj.metadataManager.outlineColumnList || []
+    let selectOutlineTemplate = html``;
+    if (this.model.datasetType === FOOTPRINTSET_TYPE) {
+      const options: unknown[] = [];
 
+      for (const col of outlineColumns) {
+        // if (!(col.ucd ?? '').includes(UCD_DEC)) continue
+        const isSelected = col.name === this.selectedOutline;
+        options.push(
+          html`<option ?selected=${isSelected} value=${col.name}>${col.name}</option>`
+        );
+      }
+      selectOutlineTemplate = html`
+        <label>
+          Pos column:
+          <select id='decColumn' @change=${this.onOutlineSelect}>
+            ${options}
+          </select>
+        </label>`;
+    }
+    const selectOutlineContainer = html`<div>${selectOutlineTemplate}</div>`;
+
+
+    const rows = glObj.metadataManager.columns || [];
+    const colsNames = ['name', 'description', 'unit']
+    if (glObj.metadataManager.selectedNameColumn?.details) {
+      // glObj.metadataManager.selectedNameColumn?.details.keys()
+      const extraColsNames = [...glObj.metadataManager.selectedNameColumn?.details].map( ([k,v]) => {return k})
+      colsNames.concat(extraColsNames)
+    }
+    
+
+
+
+    // [...glObj.metadataManager.selectedNameColumn?.details].map( ([k, v]) => { return k}
+    // colsNames.concat(glObj.metadataManager.selectedNameColumn?.details.map(c => {return c.name}))
     return html`
       <header>
         <div>
@@ -333,66 +391,81 @@ export class AstroMiniMetadata extends LitElement {
 
         <button class="close" @click=${this.onClose}>×</button>
       </header>
+
+
+
       <main>
         ${this.model?.catOrFoot?.description
         ? html`<p class="head">${this.model?.catOrFoot.description}</p>`
         : null}
-        ${cols.length === 0
+        ${rows.length === 0
         ? html`<div class="muted">No metadata available.</div>`
         : html`
               <div class="cols">
-                <div class="muted">pos</div>
+
+              <!-- <div class="muted">pos</div>
                 <div class="muted">name</div>
                 <div class="muted">type</div>
                 <div class="muted">unit</div>
                 <div class="muted">ucd</div>
-                <div class="muted">description</div>
+                <div class="muted">description</div> -->
 
-                ${cols.map(col => {
-          const showCheckbox = this.isPosColumn(col);
+                ${colsNames.map(cn => {
+                  html `<div class="muted">${cn}</div>`
+                })}
 
-          // compute checked/disabled state
-          let checked = false;
-          let disabled = false;
+                ${rows.map(row => {
+                    const showCheckbox = this.isPosColumn(row);
 
-          if (this.model.datasetType === CATALOGUE_TYPE) {
+                    // compute checked/disabled state
+                    let checked = false;
+                    let disabled = false;
 
-            if ((col.ucd ?? '').includes(UCD_RA)) {
-              checked = col.name === this.selectedRa;
-              // disable all other RA if one is selected and this is not it
-              if (this.selectedRa && col.name !== this.selectedRa) disabled = true;
-            } else if ((col.ucd ?? '').includes(UCD_DEC)) {
-              checked = col.name === this.selectedDec;
-              if (this.selectedDec && col.name !== this.selectedDec) disabled = true;
-            }
-          } else {
-            // FOOTPRINT
-            if (col.ucd === UCD_OUTLINE) {
-              checked = col.name === this.selectedOutline;
-              if (this.selectedOutline && col.name !== this.selectedOutline) disabled = true;
-            }
-          }
+                    if (this.model.datasetType === CATALOGUE_TYPE) {
 
-          return html`
-                    <div>
-                      ${showCheckbox
-              ? html`
-                            <input
-                              type="checkbox"
-                              ?checked=${checked}
-                              ?disabled=${disabled}
-                              @change=${() => this.onCheckboxChange(col)}
-                            />
-                          `
-              : html`<span class="muted">—</span>`}
-                    </div>
-                    <div><code>${col.name}</code></div>
-                    <div>${col.dataType ?? html`<span class="muted">—</span>`}</div>
-                    <div>${col.unit ?? html`<span class="muted">—</span>`}</div>
-                    <div>${col.ucd ?? html`<span class="muted">—</span>`}</div>
-                    <div>${col.description ?? html`<span class="muted">—</span>`}</div>
-                  `;
-        })}
+                      // if ((col.ucd ?? '').includes(UCD_RA)) {
+                      if (raColumns.includes(row)) {
+                        checked = row.name === this.selectedRa;
+                        // disable all other RA if one is selected and this is not it
+                        if (this.selectedRa && row.name !== this.selectedRa) disabled = true;
+                      // } else if ((col.ucd ?? '').includes(UCD_DEC)) {
+                      } else if (decColumns.includes(row)) {
+                        checked = row.name === this.selectedDec;
+                        if (this.selectedDec && row.name !== this.selectedDec) disabled = true;
+                      }
+                    } else {
+                      // FOOTPRINT
+                      // if (col.ucd === UCD_OUTLINE) {
+                      if (outlineColumns.includes(row)) {
+                        checked = row.name === this.selectedOutline;
+                        if (this.selectedOutline && row.name !== this.selectedOutline) disabled = true;
+                      }
+                    }
+
+                    return html`
+                              <div>
+                                ${showCheckbox ? html`
+                                                <input
+                                                  type="checkbox"
+                                                  ?checked=${checked}
+                                                  ?disabled=${disabled}
+                                                  @change=${() => this.onCheckboxChange(row)}
+                                                />
+                                              `
+                                  : html`<span class="muted">—</span>`
+                                  }
+                              </div>
+                              
+
+                              <div><code>${row.name}</code></div>
+                              <div>${row.description ?? html`<span class="muted">—</span>`}</div>
+                              <div>${row.unit ?? html`<span class="muted">—</span>`}</div>
+                              ${[...row.details].map( ([k, v]) => {
+                                  html `<div>${v ?? html`<span class="muted">—</span>`}</div>`
+
+                              })}
+                            `;
+                  })}
               </div>
             `}
       </main>

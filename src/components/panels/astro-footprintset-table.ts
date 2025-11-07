@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { bus, cid } from '../../bus';
-import { AstroTaFootprintSetLoadedResPayload, FootprintSet, DataProvider, Metadata,  MiniMetadataPanel,  FOOTPRINTSET_TYPE } from '../../types';
+import { AstroTaFootprintSetLoadedResPayload, AstroEntity, DataProvider, Metadata,  MiniMetadataPanel,  FOOTPRINTSET_TYPE } from '../../types';
 import '../mini-panels/astro-mini-metadata'; // <-- make sure path matches where you put it
 
 @customElement('astro-footprintset-table')
@@ -63,14 +63,14 @@ export class AstroFootprintSetTable extends LitElement {
   }
 
   // ---- helpers -------------------------------------------------------------
-  private getColumns(f: FootprintSet): Metadata[] {
-    const fromMD = f.metadataList?.metadataList ?? [];
+  private getColumns(f: AstroEntity): Metadata[] {
+    const fromMD = f.astroviewerGlObj?.metadataManager.columns ?? [];
     const fromColumns = Array.isArray((f as any).columns) ? ((f as any).columns as Metadata[]) : [];
     return (fromMD.length ? fromMD : fromColumns).filter(Boolean);
   }
 
   // ---- filtering -----------------------------------------------------------
-  private filtered(): FootprintSet[] {
+  private filtered(): AstroEntity[] {
     const q = this.filter.trim().toLowerCase();
     
     const allFootprintSet = this.dataProviders.flatMap( p => p.footprints)
@@ -80,7 +80,7 @@ export class AstroFootprintSetTable extends LitElement {
     return ( allFootprintSet ?? []).filter(f => {
       const cols = this.getColumns(f);
       const hay = [
-        f.name, f.description, f.provider,
+        f.name, f.description, f.providerUrl,
         ...cols.map(col => `${col.name} ${col.description} ${col.dataType} ${col.ucd} ${col.unit}`)
       ].filter(Boolean).join(' ').toLowerCase();
       return hay.includes(q);
@@ -89,10 +89,10 @@ export class AstroFootprintSetTable extends LitElement {
 
 
 // MiniMetadataPanel
-  private openMetadataPanel(f: FootprintSet) {
+  private openMetadataPanel(f: AstroEntity) {
     // spawn a floating mini-panel; doesn’t affect current panel
     const el = document.createElement('astro-mini-metadata') as any;
-    if (!f.metadataDetails) return
+    if (!f.astroviewerGlObj?.metadataManager.columns) return
     
     const model: MiniMetadataPanel = {
       catOrFoot: f,
@@ -103,7 +103,7 @@ export class AstroFootprintSetTable extends LitElement {
     document.body.appendChild(el);
   }
 
-  private _callPlotFootprintSet(f: FootprintSet): Promise<{ dataProvider: DataProvider, footprintSet: FootprintSet }> {
+  private _callPlotFootprintSet(f: AstroEntity): Promise<{ dataProvider: DataProvider, footprintSet: AstroEntity }> {
     const correlation = cid();
     return new Promise((resolve, reject) => {
       const off = bus.on('astro.plot.footprintset:res', (msg: AstroTaFootprintSetLoadedResPayload) => {
@@ -130,12 +130,12 @@ export class AstroFootprintSetTable extends LitElement {
       // Re-emit using the originals so we don't capture the wrapped ones
       bus.emit('astro.plot.footprintset:req', { 
         cid: correlation, 
-        dataProvider: this.getDataProviderByURL(f.provider), 
+        dataProvider: this.getDataProviderByURL(f.providerUrl), 
         footprintSet: f });
     });
   }
 
-  private async _plotFootprintSet(f: FootprintSet) {
+  private async _plotFootprintSet(f: AstroEntity) {
     if (!f) return
     try {
 
@@ -194,7 +194,7 @@ export class AstroFootprintSetTable extends LitElement {
                     <div class="subtle">${f.name}</div>
                   </td>
                   <td>${f.description || html`<span class="muted">—</span>`}</td>
-                  <td class="nowrap"> ${f.provider || html`<span class="muted">—</span>`}</td>
+                  <td class="nowrap"> ${f.providerUrl || html`<span class="muted">—</span>`}</td>
                   <td class="nowrap">
                     <button class="btn" @click=${() => this.openMetadataPanel(f)}>Show metadata</button>
                     <button class="btn" @click=${() => this._plotFootprintSet(f)}>Plot</button>

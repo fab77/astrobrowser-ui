@@ -1,11 +1,15 @@
 // src/astro-controller.ts
+import { addTAPRepo } from './services/repositories/tapRepoService';
 import { bus } from './bus';
 import { dataProviderStore } from './stores/DataProviderStore';
-import type { Catalogue, DataProvider, FootprintSet, IAstroViewerAPI } from './types';
+import type { AstroEntity, DataProvider, IAstroViewerAPI } from './types';
+import {CoordsType, Point, CatalogueGL, FootprintSetGL } from 'astroviewer'
+
 
 export class AstroController {
   constructor(private api: IAstroViewerAPI) { }
 
+  
   mount() {
     // Commands
     bus.on('astro.goto', ({ ra, dec, fov }) => this.api.goto(ra, dec, fov));
@@ -23,10 +27,11 @@ export class AstroController {
     // Catalogue Plots
     bus.on('astro.plot.catalogue:req', async ({ cid, dataProvider, catalogue }) => {
       try {
+        const fovPolygon: Point[] = this.api.getFoVPolygon()
+        dataProvider.queryCatalogueByFoV(catalogue.astroviewerGlObj as CatalogueGL, fovPolygon)
 
-        await this.api.showCatalogue(catalogue.astroviewerGlObj)
-
-        const payload: { dataProvider: DataProvider, catalogue: Catalogue } = {
+        await this.api.showCatalogue(catalogue)
+        const payload: { dataProvider: DataProvider, catalogue: AstroEntity } = {
           dataProvider: dataProvider,
           catalogue: catalogue
         };
@@ -38,7 +43,7 @@ export class AstroController {
       }
     });
 
-    bus.on('astro.metadata:raChanged', ({ catalogue, column }) => {      
+    bus.on('astro.metadata:raChanged', ({ catalogue, column }) => {
       dataProviderStore.removeFromActiveCatalogues(catalogue)
       catalogue = this.api.changeCatalogueRA(catalogue, column) // <-- delegate to your viewer API here
       dataProviderStore.addToActiveCatalogues(catalogue)
@@ -72,7 +77,7 @@ export class AstroController {
       this.api.hideCatalogue(catalogue, isVisible);
     });
 
-    bus.on('astro.plot.catalogue:remove', ({ catalogue}) => {
+    bus.on('astro.plot.catalogue:remove', ({ catalogue }) => {
       this.api.removeCatalogue(catalogue);
     });
 
@@ -80,15 +85,21 @@ export class AstroController {
     bus.on('astro.plot.footprintset:req', async ({ cid, dataProvider, footprintSet }) => {
       try {
 
-        await this.api.showFootprintSet(footprintSet.astroviewerGlObj)
+        const fovPolygon: Point[] = this.api.getFoVPolygon()
+        const radiusDeg = this.api.getFoV().minFoV / 2
+        const centralPoint = this.api.getCenterCoordinates()
+        if (!centralPoint?.astroDeg) throw new Error(`No central point retrieved`)
+        const point = new Point({raDeg: centralPoint?.astroDeg.ra, decDeg: centralPoint?.astroDeg.dec}, CoordsType.ASTRO)
+        dataProvider.queryFootprintSetByFov(footprintSet.astroviewerGlObj as FootprintSetGL, fovPolygon, point, radiusDeg)
 
-        const payload: { dataProvider: DataProvider, footprintSet: FootprintSet } = {
+        await this.api.showFootprintSet(footprintSet)
+        const payload: { dataProvider: DataProvider, footprintSet: AstroEntity } = {
           dataProvider: dataProvider,
           footprintSet: footprintSet
         };
 
         bus.emit('astro.plot.footprintset:res', { cid, ok: true, payload });
-        bus.emit('tap:footprintsetSelected', { ...payload });
+        // bus.emit('tap:footprintsetSelected', { ...payload });
       } catch (e: any) {
         bus.emit('astro.plot.footprintset:res', { cid, ok: false, error: e?.message ?? String(e) });
       }
@@ -97,7 +108,8 @@ export class AstroController {
     // === TAP integration (bus-only) ===
     bus.on('astro.tap.addRepo:req', async ({ cid, url }) => {
       try {
-        const dataProvider = await this.api.addTAPRepo(url);
+        // const dataProvider = await this.api.addTAPRepo(url);
+        const dataProvider = await addTAPRepo(url);
         const payload: { dataProvider: DataProvider } = {
           dataProvider: dataProvider
         };

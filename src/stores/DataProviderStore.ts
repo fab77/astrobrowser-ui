@@ -1,4 +1,4 @@
-import type { Catalogue, DataProvider } from 'src/types';
+import type { AstroEntity, DataProvider } from 'src/types';
 
 type Listener = (p: DataProvider | undefined) => void;
 
@@ -7,7 +7,7 @@ class DataProviderStore {
   private _providers: DataProvider[] = [];
   private listeners = new Set<Listener>();
   // private activeCatalogues: Map<DataProvider, Catalogue[]> = new Map()
-  private activeCatalogues: Catalogue[] = []
+  private activeCatalogues: AstroEntity[] = []
 
   get(): DataProvider[] { return this._providers; }
 
@@ -27,26 +27,26 @@ class DataProviderStore {
 
   clear() { this._providers = []; }
 
-  getAllActiveCatalogues(): Catalogue[] {
+  getAllActiveCatalogues(): AstroEntity[] {
     return this.activeCatalogues
   }
 
-  getCatalogueById(id: string): Catalogue | undefined {
+  getCatalogueById(id: string): AstroEntity | undefined {
     return this.activeCatalogues.find( c => c.id == id)
   }
 
-  getActiveCatalogues(prodiderUrl: string): Catalogue[] {
-    return this.activeCatalogues.filter((cat) => cat.provider == prodiderUrl)
+  getActiveCatalogues(prodiderUrl: string): AstroEntity[] {
+    return this.activeCatalogues.filter((cat) => cat.providerUrl == prodiderUrl)
   }
   
-  addToActiveCatalogues(cat: Catalogue): Catalogue[] {
+  addToActiveCatalogues(cat: AstroEntity): AstroEntity[] {
     if (!this.activeCatalogues.some(c => c.id == cat.id)){
       this.activeCatalogues.push(cat)
     }
     return this.activeCatalogues
   }
 
-  removeFromActiveCatalogues(cat: Catalogue): Catalogue[] {
+  removeFromActiveCatalogues(cat: AstroEntity): AstroEntity[] {
     const idx = this.activeCatalogues.findIndex(c => c.id === cat.id);
     if (idx === -1) return [];
     this.activeCatalogues.splice(idx, 1);            // mutate in place (fine here)
@@ -54,8 +54,8 @@ class DataProviderStore {
   }
 
   // Optional: remove everything for a provider
-  removeAllForProvider(prodiderUrl: string): Catalogue[] {
-    const arr = this.activeCatalogues.filter(c => c.provider !== prodiderUrl)
+  removeAllForProvider(prodiderUrl: string): AstroEntity[] {
+    const arr = this.activeCatalogues.filter(c => c.providerUrl !== prodiderUrl)
     this.activeCatalogues = arr
     return this.activeCatalogues
   }

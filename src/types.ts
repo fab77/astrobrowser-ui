@@ -2,8 +2,9 @@
 // FILE: src/types.ts
 // Minimal, stable API surface exposed by your AstroViewer wrapper
 // =========================
+import { Point, CatalogueGL, FootprintSetGL, PointCoordinates, FoV, MetadataManager } from 'astroviewer'
 
-import { CatalogueGL, FootprintSetGL } from "astroviewer";
+
 
 
 // import { DataProvider } from "./events";
@@ -11,31 +12,31 @@ import { CatalogueGL, FootprintSetGL } from "astroviewer";
 export interface AstroState { centralRADeg: number; centralDecDeg: number; fov: number }
 
 export interface IAstroViewerAPI {
-    // init(canvasDomId: string): void;
-    version?: string;
-    goto(ra: number, dec: number, fov?: number): void;
-    toggleHealpixGrid(on?: boolean): void;
-    toggleEquatorialGrid(on?: boolean): void;
-    toggleInsideSphere(on?: boolean): void;
-    
-    addTAPRepo(url: string): Promise<DataProvider>;
-    setFoV(fov: number): void;
-    getState(): AstroState;
-    onStateChanged?: (cb: (s: AstroState) => void) => void; // optional subscription bridge
-    // catalogue
-    showCatalogue(catalogue: CatalogueGL): void //TODO pass here only Catalogue
-    changeCatalogueRA(catalogue: Catalogue, raColumnName: string): Catalogue
-    changeCatalogueDec(catalogue: Catalogue, decColumnName: string): Catalogue
-    changeCatalogueColor(catalogue: Catalogue, hexColor: string): Catalogue
-    setCatalogueShapeHue(catalogue: Catalogue, metadataColumnName: string | undefined): Catalogue
-    setCatalogueShapeSize(catalogue: Catalogue, metadataColumnName: string): Catalogue
-    hideCatalogue(catalogue: Catalogue, show: boolean): void
-    removeCatalogue(catalogue: Catalogue): void
-    
-    // footprintset
-    showFootprintSet(fset: FootprintSetGL): void //TODO pass here only Footprint
-    
+  // init(canvasDomId: string): void;
+  version?: string;
+  goto(ra: number, dec: number, fov?: number): void;
+  toggleHealpixGrid(on?: boolean): void;
+  toggleEquatorialGrid(on?: boolean): void;
+  toggleInsideSphere(on?: boolean): void;
 
+  // addTAPRepo(url: string): Promise<DataProvider>;
+  getCenterCoordinates(): PointCoordinates | undefined 
+  getFoV(): FoV
+  setFoV(fov: number): void;
+  getState(): AstroState;
+  getFoVPolygon(): Point[];
+  onStateChanged?: (cb: (s: AstroState) => void) => void; // optional subscription bridge
+  // catalogue
+  showCatalogue(catalogue: AstroEntity): void //TODO pass here only Catalogue
+  changeCatalogueRA(catalogue: AstroEntity, raColumnName: string): AstroEntity
+  changeCatalogueDec(catalogue: AstroEntity, decColumnName: string): AstroEntity
+  changeCatalogueColor(catalogue: AstroEntity, hexColor: string): AstroEntity
+  setCatalogueShapeHue(catalogue: AstroEntity, metadataColumnName: string | undefined): AstroEntity
+  setCatalogueShapeSize(catalogue: AstroEntity, metadataColumnName: string): AstroEntity
+  hideCatalogue(catalogue: AstroEntity, show: boolean): void
+  removeCatalogue(catalogue: AstroEntity): void
+  // footprintset
+  showFootprintSet(fset: AstroEntity): void //TODO pass here only Footprint
 }
 
 export interface AstroState {
@@ -63,7 +64,7 @@ export const CATALOGUE_TYPE = 'Catalogue' as const
 export const FOOTPRINTSET_TYPE = 'FootprintSet' as const
 export type DatasetType = typeof CATALOGUE_TYPE | typeof FOOTPRINTSET_TYPE
 export type MiniMetadataPanel = {
-  catOrFoot: Catalogue | FootprintSet
+  catOrFoot: AstroEntity
   datasetType: DatasetType
 }
 
@@ -95,31 +96,52 @@ export interface DataProvider {
   type: DataProviderType
   url: string;
   functions: FunctionDetails[]
-  catalogues: Catalogue[];
-  footprints: FootprintSet[];
+  catalogues: AstroEntity[];
+  footprints: AstroEntity[];
+  notClassified: AstroEntity[];
+  getQueryFoVPolygon(points: Point[]): string;
+  queryCatalogueByFoV(catalogueGL: CatalogueGL, fovPolygon: Point[]): Promise<CatalogueGL | undefined>
+  queryFootprintSetByFov(footprintSetGL: FootprintSetGL, fovPolygon: Point[], centralPoint: Point, radiusDeg: number): Promise<FootprintSetGL | undefined>
 }
 
-export interface Catalogue {
+export interface AstroEntity {
   id: string
   name: string;
   description?: string;
-  provider: string;
-  metadataDetails?: MetadataDetails;
-  astroviewerGlObj: CatalogueGL
-  // allow extra fields coming from adapters
-  [k: string]: any;
+  providerUrl: string;
+  metadataManager?: MetadataManager;
+  astroviewerGlObj: CatalogueGL | FootprintSetGL | undefined
 }
 
-export interface FootprintSet {
-  id: string
+export interface AstroEntityInit {
+  id: string;
   name: string;
-  description?: string;
-  provider: string;
-  metadataDetails?: MetadataDetails;
-  astroviewerGlObj: FootprintSetGL
-  // allow extra fields coming from adapters
-  [k: string]: any;
+  description?: string
+  providerUrl: string;
+  metadataManager?: MetadataManager;
 }
+
+// export interface Catalogue {
+//   _id: string
+//   _name: string;
+//   _description?: string;
+//   _providerUrl: string;
+//   _metadataManager?: MetadataManager;
+//   _astroviewerGlObj: CatalogueGL
+//   // allow extra fields coming from adapters
+//   // [k: string]: any;
+// }
+
+// export interface FootprintSet {
+//   id: string
+//   name: string;
+//   description?: string;
+//   _providerUrl: string;
+//   metadataDetails?: MetadataDetails;
+//   astroviewerGlObj: FootprintSetGL
+//   // allow extra fields coming from adapters
+//   [k: string]: any;
+// }
 
 export interface AstroSettings {
   equatorialGrid: boolean;
@@ -136,52 +158,52 @@ export interface AstroTapAddRepoReqPayload {
 
 export type AstroTapAddRepoResPayload =
   | {
-      cid: string;
-      ok: true;
-      payload: { dataProvider: DataProvider };
-    }
+    cid: string;
+    ok: true;
+    payload: { dataProvider: DataProvider };
+  }
   | {
-      cid: string;
-      ok: false;
-      error: string;
-    };
+    cid: string;
+    ok: false;
+    error: string;
+  };
 
-    export interface AstroTapCatalogueLoadedReqPayload {
-      cid: string;
-      dataProvider: DataProvider
-      catalogue: Catalogue
-    }
-    
-    export type AstroTapCatalogueLoadedResPayload =
+export interface AstroTapCatalogueLoadedReqPayload {
+  cid: string;
+  dataProvider: DataProvider
+  catalogue: AstroEntity
+}
+
+export type AstroTapCatalogueLoadedResPayload =
   | {
-      cid: string;
-      ok: true;
-      payload: { dataProvider: DataProvider, catalogue: Catalogue };
-    }
+    cid: string;
+    ok: true;
+    payload: { dataProvider: DataProvider, catalogue: AstroEntity };
+  }
   | {
-      cid: string;
-      ok: false;
-      error: string;
-    };
-    
-    
-    export interface AstroTaFootprintSetLoadedReqPayload {
-      cid: string;
-      dataProvider: DataProvider
-      footprintSet: FootprintSet
-    }
-    
-    export type AstroTaFootprintSetLoadedResPayload =
+    cid: string;
+    ok: false;
+    error: string;
+  };
+
+
+export interface AstroTaFootprintSetLoadedReqPayload {
+  cid: string;
+  dataProvider: DataProvider
+  footprintSet: AstroEntity
+}
+
+export type AstroTaFootprintSetLoadedResPayload =
   | {
-      cid: string;
-      ok: true;
-      payload: { dataProvider: DataProvider, footprintSet: FootprintSet };
-    }
+    cid: string;
+    ok: true;
+    payload: { dataProvider: DataProvider, footprintSet: AstroEntity };
+  }
   | {
-      cid: string;
-      ok: false;
-      error: string;
-    };
+    cid: string;
+    ok: false;
+    error: string;
+  };
 
 
 

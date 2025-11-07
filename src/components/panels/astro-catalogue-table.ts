@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { bus, cid } from '../../bus';
-import { AstroTapCatalogueLoadedResPayload, Catalogue, CATALOGUE_TYPE, DataProvider, Metadata, MiniMetadataPanel } from '../../types';
+import { AstroTapCatalogueLoadedResPayload, AstroEntity, CATALOGUE_TYPE, DataProvider, Metadata, MiniMetadataPanel } from '../../types';
 import '../mini-panels/astro-mini-metadata'; // <-- make sure path matches where you put it
 import { dataProviderStore } from '../../stores/DataProviderStore';
 
@@ -49,7 +49,7 @@ export class AstroCatalogueTable extends LitElement {
   @property({ attribute: false })
   dataProviders: DataProvider[] = []
 
-  @state() activeCatalogues: Catalogue[] = []
+  @state() activeCatalogues: AstroEntity[] = []
 
   // private unsubStore?: () => void;
   @state() private filter = '';
@@ -74,14 +74,14 @@ export class AstroCatalogueTable extends LitElement {
   }
 
   // ---- helpers -------------------------------------------------------------
-  private getColumns(c: Catalogue): Metadata[] {
-    const fromMD = c.metadataList?.metadataList ?? [];
+  private getColumns(c: AstroEntity): Metadata[] {
+    const fromMD = c.astroviewerGlObj?.metadataManager.columns ?? [];
     const fromColumns = Array.isArray((c as any).columns) ? ((c as any).columns as Metadata[]) : [];
     return (fromMD.length ? fromMD : fromColumns).filter(Boolean);
   }
 
   // ---- filtering -----------------------------------------------------------
-  private filtered(): Catalogue[] {
+  private filtered(): AstroEntity[] {
     const q = this.filter.trim().toLowerCase();
 
     const allCatalogues = this.dataProviders.flatMap(p => p.catalogues)
@@ -92,17 +92,17 @@ export class AstroCatalogueTable extends LitElement {
     return (allCatalogues ?? []).filter(c => {
       const cols = this.getColumns(c);
       const hay = [
-        c.name, c.description, c.provider,
+        c.name, c.description, c.providerUrl,
         ...cols.map(col => `${col.name} ${col.description} ${col.dataType} ${col.ucd} ${col.unit}`)
       ].filter(Boolean).join(' ').toLowerCase();
       return hay.includes(q);
     });
   }
 
-  private openMetadataPanel(c: Catalogue) {
+  private openMetadataPanel(c: AstroEntity) {
     // spawn a floating mini-panel; doesn’t affect current panel
     const el = document.createElement('astro-mini-metadata') as any;
-    if (!c.metadataDetails) return
+    if (!c.astroviewerGlObj?.metadataManager.columns) return
 
     const model: MiniMetadataPanel = {
       catOrFoot: c,
@@ -113,7 +113,7 @@ export class AstroCatalogueTable extends LitElement {
     document.body.appendChild(el);
   }
 
-  private _callPlotCatalogue(c: Catalogue): Promise<{ dataProvider: DataProvider, catalogue: Catalogue }> {
+  private _callPlotCatalogue(c: AstroEntity): Promise<{ dataProvider: DataProvider, catalogue: AstroEntity }> {
     const correlation = cid();
     return new Promise((resolve, reject) => {
       const off = bus.on('astro.plot.catalogue:res', (msg: AstroTapCatalogueLoadedResPayload) => {
@@ -140,21 +140,21 @@ export class AstroCatalogueTable extends LitElement {
       // Re-emit using the originals so we don't capture the wrapped ones
       bus.emit('astro.plot.catalogue:req', {
         cid: correlation,
-        dataProvider: this.getDataProviderByURL(c.provider),
+        dataProvider: this.getDataProviderByURL(c.providerUrl),
         catalogue: c
       });
     });
   }
 
-  private async _plotCatalogue(c: Catalogue) {
+  private async _plotCatalogue(c: AstroEntity) {
     if (!c) return
     try {
 
       const { dataProvider, catalogue } = await this._callPlotCatalogue(c)
 
       console.log(`Catalogue ${catalogue.name} loaded from ${dataProvider.url}`)
-      console.log(`Catalogue hue column name ${catalogue.astroviewerGlObj.catalogueProps.shapeHueColumn?.name} `)
-      
+      console.log(`Catalogue hue column name ${catalogue.astroviewerGlObj?.metadataManager.selectedHueColumn?.name} `)
+
       // this.activeCatalogues = [...this.activeCatalogues, c];  // <-- this will trigger the reactivity, not the push
       // this.activeCatalogues = dataProviderStore.addToActiveCatalogues(dataProvider, catalogue)
       this.activeCatalogues = []
@@ -168,19 +168,19 @@ export class AstroCatalogueTable extends LitElement {
     }
   }
 
-  private async _hideCatalogue(cat: Catalogue) {
-    const isVisible = !cat.astroviewerGlObj._isVisible
+  private async _hideCatalogue(cat: AstroEntity) {
+    const isVisible = !cat.astroviewerGlObj?.isVisible || false
     bus.emit('astro.plot.catalogue:show', { catalogue: cat, isVisible: isVisible });
   }
 
-  private async _removeCatalogue(cat: Catalogue) {
+  private async _removeCatalogue(cat: AstroEntity) {
     bus.emit('astro.plot.catalogue:remove', { catalogue: cat });
     // this.activeCatalogues = this.activeCatalogues.filter(c => c !== cat);
     // this.activeCatalogues = dataProviderStore.removeFromActiveCatalogues(cat.provider, cat)
     this.activeCatalogues = dataProviderStore.removeFromActiveCatalogues(cat)
   }
 
-  private _onColorPicked(cat: Catalogue, ev: Event) {
+  private _onColorPicked(cat: AstroEntity, ev: Event) {
     const hex = (ev.target as HTMLInputElement).value;
     bus.emit('astro.metadata:colorChanged', { catalogue: cat, hexColor: hex });
   }
@@ -225,7 +225,7 @@ export class AstroCatalogueTable extends LitElement {
                     <div class="subtle">${cat.name}</div>
                   </td>
                   <td>${cat.description || html`<span class="muted">—</span>`}</td>
-                  <td class="nowrap"> ${cat.provider || html`<span class="muted">—</span>`}</td>
+                  <td class="nowrap"> ${cat.providerUrl || html`<span class="muted">—</span>`}</td>
                   <td class="nowrap">
                     <button class="btn" @click=${() => this._plotCatalogue(cat)}>Plot</button>
                   </td>
@@ -246,7 +246,7 @@ export class AstroCatalogueTable extends LitElement {
             </thead>
             <tbody>
               ${this.activeCatalogues.map(cat => {
-            const currentHex = cat.astroviewerGlObj.catalogueProps.shapeColor ?? '#4f46e5';
+            const currentHex = cat.astroviewerGlObj?.shapeColor ?? '#4f46e5';
             return html`
                 <tr>
                   <td class="nowrap">
@@ -254,7 +254,7 @@ export class AstroCatalogueTable extends LitElement {
                     <div class="subtle">${cat.name}</div>
                   </td>
                   <td>${cat.description || html`<span class="muted">—</span>`}</td>
-                  <td class="nowrap"> ${cat.provider || html`<span class="muted">—</span>`}</td>
+                  <td class="nowrap"> ${cat.providerUrl || html`<span class="muted">—</span>`}</td>
                   <td class="nowrap">
                     <button class="btn" @click=${() => this.openMetadataPanel(cat)}>Show metadata</button>
                     <button class="btn" @click=${() => this._hideCatalogue(cat)}>Hide</button>

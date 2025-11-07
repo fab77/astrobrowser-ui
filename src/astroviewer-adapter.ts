@@ -1,6 +1,10 @@
-import { AstroViewer, CameraChangedDetail, CatalogueGL, FootprintSetGL, TapRepo, addTAPRepo } from 'astroviewer';
-import { DataProvider, AstroState, IAstroViewerAPI, Catalogue } from './types';
-import { convertTapRepoToDataProvider } from './helpers/tap-converter';
+
+
+
+import { AstroState, IAstroViewerAPI, AstroEntity } from './types.js';
+
+import { Point, FoV, AstroViewer, CameraChangedDetail, CatalogueGL, FootprintSetGL, PointCoordinates } from 'astroviewer';
+
 
 export class AstroViewerAdapter implements IAstroViewerAPI {
 
@@ -56,76 +60,111 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
     // ---- IAstroViewerAPI implementation ----
     version = 'dev'
 
-    changeCatalogueRA(catalogue: Catalogue, raColumnName: string): Catalogue {
-        if (!this.viewer) throw new Error(`astro-viewer is undefined": ${this.viewer}`)
-        const catGL = this.viewer.changeCatalogueRA(catalogue.astroviewerGlObj as CatalogueGL, raColumnName)
-        catalogue.astroviewerGlObj = catGL
-        return catalogue
+    private requireViewer() {
+        const v = this.viewer;
+        if (!v) throw new Error("astro-viewer is undefined");
+        return v; // Now typed as non-null in the caller via local const
     }
 
-    changeCatalogueDec(catalogue: Catalogue, decColumnName: string): Catalogue {
-        if (!this.viewer) throw new Error(`astro-viewer is undefined": ${this.viewer}`)
-        const catGL = this.viewer?.changeCatalogueDec(catalogue.astroviewerGlObj as CatalogueGL, decColumnName)
-        catalogue.astroviewerGlObj = catGL
-        return catalogue
+    private requireCatalogueGL(e: AstroEntity): CatalogueGL {
+        const gl = e.astroviewerGlObj;
+        if (!gl) throw new Error("AstroEntity has no GL object");
+        if ((gl as any)._kind !== "CatalogueGL") {
+            throw new Error("Expected a CatalogueGL, got a FootprintSetGL");
+        }
+        return gl as CatalogueGL;
+    }
+    private requireFootprintSetGL(e: AstroEntity): FootprintSetGL {
+        const gl = e.astroviewerGlObj;
+        if (!gl) throw new Error("AstroEntity has no GL object");
+        if ((gl as any)._kind !== "FootprintSetGL") {
+            throw new Error("Expected a CatalogueGL, got a FootprintSetGL");
+        }
+        return gl as FootprintSetGL;
     }
 
-    changeCatalogueColor(catalogue: Catalogue, hexColor: string): Catalogue {
-        if (!this.viewer) throw new Error(`astro-viewer is undefined": ${this.viewer}`)
-        const catGL = this.viewer?.changeCatalogueColor(catalogue.astroviewerGlObj as CatalogueGL, hexColor)
-        catalogue.astroviewerGlObj = catGL
-        return catalogue
+    changeCatalogueRA(catalogue: AstroEntity, metadataColumnName: string): AstroEntity {
+        const viewer = this.requireViewer();
+        const catGL = this.requireCatalogueGL(catalogue);
+        const updated = viewer.changeCatalogueRA(catGL, metadataColumnName);
+        catalogue.astroviewerGlObj = updated;
+        return catalogue;
     }
 
-    setCatalogueShapeHue(catalogue: Catalogue, metadataColumnName: string): Catalogue {
-        if (!this.viewer) throw new Error(`astro-viewer is undefined": ${this.viewer}`)
-        const catGL = this.viewer?.setCatalogueShapeHue(catalogue.astroviewerGlObj as CatalogueGL, metadataColumnName)
-        catalogue.astroviewerGlObj = catGL
-        return catalogue
-    }
-    setCatalogueShapeSize(catalogue: Catalogue, metadataColumnName: string): Catalogue {
-        if (!this.viewer) throw new Error(`astro-viewer is undefined": ${this.viewer}`)
-        const catGL = this.viewer?.setCatalogueShapeSize(catalogue.astroviewerGlObj as CatalogueGL, metadataColumnName)
-        catalogue.astroviewerGlObj = catGL
-        return catalogue
+    changeCatalogueDec(catalogue: AstroEntity, metadataColumnName: string): AstroEntity {
+        const viewer = this.requireViewer();
+        const catGL = this.requireCatalogueGL(catalogue);
+        const updated = viewer.changeCatalogueDec(catGL, metadataColumnName);
+        catalogue.astroviewerGlObj = updated;
+        return catalogue;
     }
 
-    hideCatalogue(catalogue: Catalogue, show: boolean) {
-        this.viewer?.hideCatalogue(catalogue.astroviewerGlObj, show)
+    changeCatalogueColor(catalogue: AstroEntity, hexColor: string): AstroEntity {
+        const viewer = this.requireViewer();
+        const catGL = this.requireCatalogueGL(catalogue);
+        const updated = viewer.changeCatalogueColor(catGL, hexColor);
+        catalogue.astroviewerGlObj = updated;
+        return catalogue;
     }
 
-    removeCatalogue(catalogue: Catalogue) {
-        this.viewer?.deleteCatalogue(catalogue.astroviewerGlObj)
+    setCatalogueShapeHue(catalogue: AstroEntity, metadataColumnName: string): AstroEntity {
+        const viewer = this.requireViewer();
+        const catGL = this.requireCatalogueGL(catalogue);
+        const updated = viewer.setCatalogueShapeHue(catGL, metadataColumnName);
+        catalogue.astroviewerGlObj = updated;
+        return catalogue;
+    }
+
+    setCatalogueShapeSize(catalogue: AstroEntity, metadataColumnName: string): AstroEntity {
+        const viewer = this.requireViewer();
+        const catGL = this.requireCatalogueGL(catalogue);
+        const updated = viewer.setCatalogueShapeSize(catGL, metadataColumnName);
+        catalogue.astroviewerGlObj = updated;
+        return catalogue;
+    }
+
+    hideCatalogue(catalogue: AstroEntity, show: boolean) {
+        const viewer = this.requireViewer();
+        const catGL = this.requireCatalogueGL(catalogue);
+        viewer.hideCatalogue(catGL, show)
+    }
+
+    removeCatalogue(catalogue: AstroEntity) {
+        const viewer = this.requireViewer();
+        const catGL = this.requireCatalogueGL(catalogue);
+        viewer.deleteCatalogue(catGL)
     }
 
     goto(ra: number, dec: number, fov?: number): void {
-        this.viewer?.goTo(ra, dec)
+        const viewer = this.requireViewer();
+        viewer.goTo(ra, dec)
     }
 
     toggleHealpixGrid(on?: boolean): void {
-        this.viewer?.toggleHealpixGrid()
+        const viewer = this.requireViewer();
+        viewer.toggleHealpixGrid()
     }
 
     toggleEquatorialGrid(on?: boolean): void {
-        this.viewer?.toggleEquatorialGrid()
+        const viewer = this.requireViewer();
+        viewer.toggleEquatorialGrid()
     }
 
     toggleInsideSphere(on?: boolean): void {
-        this.viewer?.toggleInsideSphere()
+        const viewer = this.requireViewer();
+        viewer.toggleInsideSphere()
     }
 
-    async addTAPRepo(url: string): Promise<DataProvider> {
-        const tapRepo: TapRepo = await addTAPRepo(url)
-        const dataProvider = convertTapRepoToDataProvider(tapRepo)
-        return dataProvider
+    async showCatalogue(catalogue: AstroEntity): Promise<void> {
+        const viewer = this.requireViewer();
+        const catGL = this.requireCatalogueGL(catalogue);
+        viewer.showCatalogue(catGL)
     }
 
-    async showCatalogue(catalogue: CatalogueGL): Promise<void> {
-        this.viewer?.showCatalogue(catalogue)
-    }
-
-    async showFootprintSet(fset: FootprintSetGL): Promise<void> {
-        this.viewer?.showFootprintSet(fset)
+    async showFootprintSet(fset: AstroEntity): Promise<void> {
+        const viewer = this.requireViewer();
+        const fsetGL = this.requireFootprintSetGL(fset);
+        viewer.showFootprintSet(fsetGL)
     }
 
 
@@ -133,15 +172,32 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
         throw new Error('Method not implemented.');
     }
 
+    getFoVPolygon(): Point[] {
+        const viewer = this.requireViewer();
+        return viewer.getFoVPolygon()
+    }
+
+    getCenterCoordinates(): PointCoordinates | undefined {
+        const viewer = this.requireViewer();
+        return viewer.getCenterCoordinates()
+    }
+
+    getFoV(): FoV {
+        const viewer = this.requireViewer();
+        return viewer.getFoV()
+    }
+
     getState(): AstroState {
 
-        const center = this.viewer?.getCenterCoordinates()
+        const viewer = this.requireViewer();
+
+        const center = viewer.getCenterCoordinates()
         const fov = this.viewer?.getFoV().minFoV
-        const equatorialGridVisible = (this.viewer?.isEquatorialGridVisible() && true) ?? false
-        const healpixGridVisible = (this.viewer?.isHealpixGridVisible() && true) ?? false
-        const insideSphere = (this.viewer?.getInsideSphere() && true) ?? false
-        const mouseDecDeg = this.viewer?.getCoordinatesFromMouse()?.astroDeg.dec
-        const mouseRADeg = this.viewer?.getCoordinatesFromMouse()?.astroDeg.ra
+        const equatorialGridVisible = (viewer.isEquatorialGridVisible() && true) ?? false
+        const healpixGridVisible = (viewer.isHealpixGridVisible() && true) ?? false
+        const insideSphere = (viewer.getInsideSphere() && true) ?? false
+        const mouseDecDeg = viewer.getCoordinatesFromMouse()?.astroDeg.dec
+        const mouseRADeg = viewer.getCoordinatesFromMouse()?.astroDeg.ra
 
         if (!center || !fov) return {
             centralRADeg: 0,
