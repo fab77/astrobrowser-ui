@@ -155,10 +155,8 @@ export class AstroCatalogueTable extends LitElement {
       console.log(`Catalogue ${catalogue.name} loaded from ${dataProvider.url}`)
       console.log(`Catalogue hue column name ${catalogue.astroviewerGlObj?.metadataManager.selectedHueColumn?.name} `)
 
-      // this.activeCatalogues = [...this.activeCatalogues, c];  // <-- this will trigger the reactivity, not the push
-      // this.activeCatalogues = dataProviderStore.addToActiveCatalogues(dataProvider, catalogue)
-      this.activeCatalogues = []
       this.activeCatalogues = dataProviderStore.addToActiveCatalogues(catalogue)
+      this.activeCatalogues = [...dataProviderStore.getAllActiveCatalogues()];
 
     } catch (err: any) {
       console.error('[astro-catalogue-table] load failed:', err);
@@ -175,9 +173,12 @@ export class AstroCatalogueTable extends LitElement {
 
   private async _removeCatalogue(cat: AstroEntity) {
     bus.emit('astro.plot.catalogue:remove', { catalogue: cat });
-    // this.activeCatalogues = this.activeCatalogues.filter(c => c !== cat);
-    // this.activeCatalogues = dataProviderStore.removeFromActiveCatalogues(cat.provider, cat)
-    this.activeCatalogues = dataProviderStore.removeFromActiveCatalogues(cat)
+
+    // Update store (ensure it actually removes; see #2)
+    dataProviderStore.removeFromActiveCatalogues(cat);
+
+    // Force a new reference for Lit
+    this.activeCatalogues = [...dataProviderStore.getAllActiveCatalogues()];
   }
 
   private _onColorPicked(cat: AstroEntity, ev: Event) {

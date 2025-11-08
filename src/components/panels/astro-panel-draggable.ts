@@ -2,6 +2,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { bus } from '../../bus';
+import { EVT_PANEL_CLOSE } from '../../events';
 
 
 type ResizeEdge = 'right' | 'bottom' | 'corner' | null;
@@ -195,7 +196,7 @@ export class AstroPanelDraggable extends LitElement {
 
     if (id && key) {
       // Tell UIPanelManager to close; navbar can update its active state
-      bus.emit('ui:closePanel', { id, key });
+      bus.emit(EVT_PANEL_CLOSE, { id, key });
     } else {
       // Fallback if not managed by UIPanelManager
       this.remove();

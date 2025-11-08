@@ -4,7 +4,24 @@ import { bus } from './bus';
 import { dataProviderStore } from './stores/DataProviderStore';
 import type { AstroEntity, DataProvider, IAstroViewerAPI } from './types';
 import {CoordsType, Point, CatalogueGL, FootprintSetGL } from 'astroviewer'
-
+import {EVT_ASTRO_PLOT_CATALOGUE_REMOVE, 
+  EVT_ASTRO_PLOT_CATALOGUE_SHOW, 
+  EVT_ASTRO_META_COLOR_CHANGED, 
+  EVT_ASTRO_META_DEC_CHANGED, 
+  EVT_ASTRO_META_HUE_CHANGED, 
+  EVT_ASTRO_META_RA_CHANGED, 
+  EVT_ASTRO_META_SIZE_CHANGED, 
+  EVT_ASTRO_STATE_GET_req, 
+  EVT_ASTRO_STATE_GET_res, 
+  EVT_ASTRO_PLOT_FOOTPRINTSET_req, 
+  EVT_ASTRO_PLOT_FOOTPRINTSET_res, 
+  EVT_TAP_ADDREPO_req, 
+  EVT_TAP_ADDREPO_res, 
+  EVT_TAP_REPO_LOADED,
+  EVT_ASTRO_PLOT_CATALOGUE_res,
+  EVT_ASTRO_PLOT_CATALOGUE_req,
+  EVT_ASTRO_READY,
+  EVT_ASTRO_STATE_CHANGED} from './events'
 
 export class AstroController {
   constructor(private api: IAstroViewerAPI) { }
@@ -19,13 +36,13 @@ export class AstroController {
     bus.on('astro.set.fov', ({ fov }) => this.api.setFoV(fov));
 
     // Queries
-    bus.on('astro.get.state:req', ({ cid }) => {
+    bus.on(EVT_ASTRO_STATE_GET_req, ({ cid }) => {
       const state = this.api.getState();
-      bus.emit('astro.get.state:res', { cid, state });
+      bus.emit(EVT_ASTRO_STATE_GET_res, { cid, state });
     });
 
     // Catalogue Plots
-    bus.on('astro.plot.catalogue:req', async ({ cid, dataProvider, catalogue }) => {
+    bus.on(EVT_ASTRO_PLOT_CATALOGUE_req, async ({ cid, dataProvider, catalogue }) => {
       try {
         const fovPolygon: Point[] = this.api.getFoVPolygon()
         dataProvider.queryCatalogueByFoV(catalogue.astroviewerGlObj as CatalogueGL, fovPolygon)
@@ -36,38 +53,38 @@ export class AstroController {
           catalogue: catalogue
         };
 
-        bus.emit('astro.plot.catalogue:res', { cid, ok: true, payload });
+        bus.emit(EVT_ASTRO_PLOT_CATALOGUE_res, { cid, ok: true, payload });
         // bus.emit('tap:catalogueSelected', { ...payload });
       } catch (e: any) {
-        bus.emit('astro.plot.catalogue:res', { cid, ok: false, error: e?.message ?? String(e) });
+        bus.emit(EVT_ASTRO_PLOT_CATALOGUE_res, { cid, ok: false, error: e?.message ?? String(e) });
       }
     });
 
-    bus.on('astro.metadata:raChanged', ({ catalogue, column }) => {
+    bus.on(EVT_ASTRO_META_RA_CHANGED, ({ catalogue, column }) => {
       dataProviderStore.removeFromActiveCatalogues(catalogue)
       catalogue = this.api.changeCatalogueRA(catalogue, column) // <-- delegate to your viewer API here
       dataProviderStore.addToActiveCatalogues(catalogue)
     });
 
-    bus.on('astro.metadata:decChanged', ({ catalogue, column }) => {
+    bus.on(EVT_ASTRO_META_DEC_CHANGED, ({ catalogue, column }) => {
       dataProviderStore.removeFromActiveCatalogues(catalogue)
       catalogue = this.api.changeCatalogueDec(catalogue, column)
       dataProviderStore.addToActiveCatalogues(catalogue)
     });
 
-    bus.on('astro.metadata:hueChanged', ({ catalogue, column }) => {
+    bus.on(EVT_ASTRO_META_HUE_CHANGED, ({ catalogue, column }) => {
       // dataProviderStore.removeFromActiveCatalogues(catalogue)
       catalogue = this.api.setCatalogueShapeHue(catalogue, column)
       // dataProviderStore.addToActiveCatalogues(catalogue)
     });
 
-    bus.on('astro.metadata:sizeChanged', ({ catalogue, column }) => {
+    bus.on(EVT_ASTRO_META_SIZE_CHANGED, ({ catalogue, column }) => {
       // dataProviderStore.removeFromActiveCatalogues(catalogue)
       catalogue = this.api.setCatalogueShapeSize(catalogue, column)
       // dataProviderStore.addToActiveCatalogues(catalogue)
     });
 
-    bus.on('astro.metadata:colorChanged', ({ catalogue, hexColor }) => {
+    bus.on(EVT_ASTRO_META_COLOR_CHANGED, ({ catalogue, hexColor }) => {
       dataProviderStore.removeFromActiveCatalogues(catalogue)
       catalogue = this.api.changeCatalogueColor(catalogue, hexColor);
       dataProviderStore.addToActiveCatalogues(catalogue)
@@ -75,16 +92,16 @@ export class AstroController {
 
     
 
-    bus.on('astro.plot.catalogue:show', ({ catalogue, isVisible }) => {
+    bus.on(EVT_ASTRO_PLOT_CATALOGUE_SHOW, ({ catalogue, isVisible }) => {
       this.api.hideCatalogue(catalogue, isVisible);
     });
 
-    bus.on('astro.plot.catalogue:remove', ({ catalogue }) => {
+    bus.on(EVT_ASTRO_PLOT_CATALOGUE_REMOVE, ({ catalogue }) => {
       this.api.removeCatalogue(catalogue);
     });
 
     // Footprintset Plots
-    bus.on('astro.plot.footprintset:req', async ({ cid, dataProvider, footprintSet }) => {
+    bus.on(EVT_ASTRO_PLOT_FOOTPRINTSET_req, async ({ cid, dataProvider, footprintSet }) => {
       try {
 
         const fovPolygon: Point[] = this.api.getFoVPolygon()
@@ -100,15 +117,15 @@ export class AstroController {
           footprintSet: footprintSet
         };
 
-        bus.emit('astro.plot.footprintset:res', { cid, ok: true, payload });
+        bus.emit(EVT_ASTRO_PLOT_FOOTPRINTSET_res, { cid, ok: true, payload });
         // bus.emit('tap:footprintsetSelected', { ...payload });
       } catch (e: any) {
-        bus.emit('astro.plot.footprintset:res', { cid, ok: false, error: e?.message ?? String(e) });
+        bus.emit(EVT_ASTRO_PLOT_FOOTPRINTSET_res, { cid, ok: false, error: e?.message ?? String(e) });
       }
     });
 
     // === TAP integration (bus-only) ===
-    bus.on('astro.tap.addRepo:req', async ({ cid, url }) => {
+    bus.on(EVT_TAP_ADDREPO_req, async ({ cid, url }) => {
       try {
         // const dataProvider = await this.api.addTAPRepo(url);
         const dataProvider = await addTAPRepo(url);
@@ -116,22 +133,22 @@ export class AstroController {
           dataProvider: dataProvider
         };
         // reply to the requester
-        bus.emit('astro.tap.addRepo:res', { cid, ok: true, payload });
+        bus.emit(EVT_TAP_ADDREPO_res, { cid, ok: true, payload });
 
         // broadcast availability app-wide
-        bus.emit('tap:repoLoaded', { url, ...payload });
+        bus.emit(EVT_TAP_REPO_LOADED, { url, ...payload });
       } catch (e: any) {
-        bus.emit('astro.tap.addRepo:res', { cid, ok: false, error: e?.message ?? String(e) });
+        bus.emit(EVT_TAP_ADDREPO_res, { cid, ok: false, error: e?.message ?? String(e) });
       }
     });
 
 
     // Broadcast
-    this.api.onStateChanged?.((state) => bus.emit('astro.state.changed', { state }));
-    bus.emit('astro.ready', { version: this.api.version ?? '0.0.0' });
+    this.api.onStateChanged?.((state) => bus.emit(EVT_ASTRO_STATE_CHANGED, { state }));
+    bus.emit(EVT_ASTRO_READY, { version: this.api.version ?? '0.0.0' });
 
     const state = this.api.getState();
-    bus.emit('astro.state.changed', { state });
+    bus.emit(EVT_ASTRO_STATE_CHANGED, { state });
 
   }
 }

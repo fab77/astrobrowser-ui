@@ -1,7 +1,8 @@
 import { LitElement, html, css, svg } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { bus } from '../../bus';
-import { TabKey } from 'src/types';
+import { TabKey } from '../../types';
+import { EVT_PANEL_OPEN } from '../../events';
 
 @customElement('astro-nav-bar')
 export class AstroNavBar extends LitElement {
@@ -90,7 +91,7 @@ export class AstroNavBar extends LitElement {
 
   private setTab(tab: TabKey) {
     // Emit intent; UIPanelManager will handle open/close.
-    bus.emit('ui:openPanel', { tab });
+    bus.emit(EVT_PANEL_OPEN, { tab });
     // Toggle the visual active state
     this.active = (this.active === tab) ? null : tab;
   }

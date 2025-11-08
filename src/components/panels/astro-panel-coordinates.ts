@@ -6,6 +6,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { bus, cid } from '../../bus';
+import { EVT_ASTRO_STATE_GET_req, EVT_ASTRO_STATE_CHANGED, EVT_ASTRO_STATE_GET_res } from '../../events';
 
 type HMS = {
     H: number
@@ -56,7 +57,7 @@ export class AstroPanelCoordinate extends LitElement {
 
         // 1) Initialise from current engine state (correlated response)
         const correlation = cid();
-        this._offInit = bus.on('astro.get.state:res', ({ cid: rcid, state }) => {
+        this._offInit = bus.on(EVT_ASTRO_STATE_GET_res, ({ cid: rcid, state }) => {
             if (rcid !== correlation) return;
             this.craDeg = Number(state.centralRADeg) || 0;
             this.cdecDeg = Number(state.centralDecDeg) || 0;
@@ -67,10 +68,10 @@ export class AstroPanelCoordinate extends LitElement {
             this._offInit?.(); // unsubscribe init listener
             this._offInit = undefined;
         });
-        bus.emit('astro.get.state:req', { cid: correlation });
+        bus.emit(EVT_ASTRO_STATE_GET_req, { cid: correlation });
 
         // 2) Keep in sync with future engine changes
-        this._offChanged = bus.on('astro.state.changed', ({ state }) => {
+        this._offChanged = bus.on(EVT_ASTRO_STATE_CHANGED, ({ state }) => {
             this.craDeg = Number(state.centralRADeg) || 0;
             this.cdecDeg = Number(state.centralDecDeg) || 0;
             this.mraDeg = Number(state.mouseRADeg) || 0;

@@ -5,6 +5,7 @@ import './panels/astro-panel-grid'
 import './panels/astro-panel-inside-sphere'
 import './panels/astro-panel-tap'
 import { AstroState } from "../types";
+import { EVT_ASTRO_STATE_GET_res, EVT_ASTRO_STATE_GET_req } from "../events";
 
 
 @customElement('astro-panel-settings')
@@ -22,12 +23,12 @@ export class AstroPanelSettings extends LitElement {
         super.connectedCallback();
 
         const correlation = cid();
-        const offInit = bus.on('astro.get.state:res', ({ cid, state }) => {
+        const offInit = bus.on(EVT_ASTRO_STATE_GET_res, ({ cid, state }) => {
             if (cid !== correlation) return;
             this.astroSettings = state
             offInit();
         });
-        bus.emit('astro.get.state:req', { cid: correlation });
+        bus.emit(EVT_ASTRO_STATE_GET_req, { cid: correlation });
     }
 
     disconnectedCallback() {

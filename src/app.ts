@@ -95,21 +95,9 @@ async function main() {
 
     // 5) Create & mount the UIPanelManager (enforces single-panel for core tabs)
     const ui = new UIPanelManager(workarea, registry);
-    ui.mount();
-
-
-    
+    ui.mount();    
     initDataProviderBridge();
 
-
-
-    // 6) Optionally open a default tab panel on load (e.g., 'explore')
-    // bus.emit('ui:openPanel', { tab: 'explore' as TabKey });
-
-    // (Optional) If you later add plugin panels, you can load them and open with:
-    // import { loadPanel } from './plugin-loader';
-    // await loadPanel('https://your-cdn/plugin.js', registry);
-    // bus.emit('ui:openPanelKey', { key: 'pluginKey' });
 }
 
 // Bootstrap immediately

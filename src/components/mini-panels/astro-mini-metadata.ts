@@ -1,8 +1,9 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { CATALOGUE_TYPE, FOOTPRINTSET_TYPE, type MiniMetadataPanel } from '../../types';
-import { bus } from '../../bus';
+import { CATALOGUE_TYPE, type MiniMetadataPanel } from '../../types';
+import {EVT_ASTRO_META_DEC_CHANGED, EVT_ASTRO_META_HUE_CHANGED, EVT_ASTRO_META_RA_CHANGED, EVT_ASTRO_META_SIZE_CHANGED} from '../../events'
 import { ColumnType, MetadataColumn } from 'astroviewer';
+import { bus } from '../../bus';
 
 
 // const UCD_RA = 'pos.eq.ra';
@@ -135,8 +136,7 @@ export class AstroMiniMetadata extends LitElement {
     if (!this.selectedRa) return
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const cat = this.model.catOrFoot
-      // cat.astroviewerGlObj.catalogueProps.changeCatalogueMetaRA(this.selectedRa) // <--- this shall be handled in the adapter via emit
-      bus.emit('astro.metadata:raChanged', {
+      bus.emit(EVT_ASTRO_META_RA_CHANGED, {
         catalogue: cat,
         column: this.selectedRa
       });
@@ -154,7 +154,7 @@ export class AstroMiniMetadata extends LitElement {
     if (!this.selectedDec) return
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const cat = this.model.catOrFoot
-      bus.emit('astro.metadata:decChanged', {
+      bus.emit(EVT_ASTRO_META_DEC_CHANGED, {
         catalogue: cat,
         column: this.selectedDec
       });
@@ -173,7 +173,7 @@ export class AstroMiniMetadata extends LitElement {
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const cat = this.model.catOrFoot
 
-      bus.emit('astro.metadata:hueChanged', {
+      bus.emit(EVT_ASTRO_META_HUE_CHANGED, {
         catalogue: cat,
         column: this.selectedHue
       });
@@ -191,7 +191,7 @@ export class AstroMiniMetadata extends LitElement {
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const cat = this.model.catOrFoot
 
-      bus.emit('astro.metadata:sizeChanged', {
+      bus.emit(EVT_ASTRO_META_SIZE_CHANGED, {
         catalogue: cat,
         column: this.selectedShape
       });

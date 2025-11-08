@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { bus, cid } from '../../bus';
 import { AstroTaFootprintSetLoadedResPayload, AstroEntity, DataProvider, Metadata,  MiniMetadataPanel,  FOOTPRINTSET_TYPE } from '../../types';
 import '../mini-panels/astro-mini-metadata'; // <-- make sure path matches where you put it
+import { EVT_ASTRO_FOOTPRINTSET_F_SELECTED } from '../../events';
 
 @customElement('astro-footprintset-table')
 export class AstroFootprintSetTable extends LitElement {
@@ -143,7 +144,7 @@ export class AstroFootprintSetTable extends LitElement {
 
       console.log(`FootprontSets ${footprintSet.name} loaded from ${dataProvider.url}`)
       // DOM event for local consumers
-      this.dispatchEvent(new CustomEvent('tap:footprintsetSelected', {
+      this.dispatchEvent(new CustomEvent(EVT_ASTRO_FOOTPRINTSET_F_SELECTED, {
         bubbles: true, composed: true,
         detail: { repo: dataProvider.url, footprintSet: f }
       }));

@@ -1,11 +1,12 @@
 // src/ui/UIPanelManager.ts
 import { bus } from '../bus';
-import { TabKey } from 'src/types';
+import { TabKey } from '../types';
 
 import { PanelRegistry } from '../services/panels/PanelRegistry';
 import '../components/panels/astro-panel-draggable';
 import '../components/panels/astro-panel-grid';
 import '../components/panels/astro-panel-goto';
+import { EVT_PANEL_OPEN, EVT_PANEL_CLOSE } from '../events';
 
 const CORE_TABS = new Set<TabKey>(['explore','analysis','metadata','settings']);
 
@@ -21,10 +22,10 @@ export class UIPanelManager {
 
   mount() {
     // Core tabs (exclusive, toggle)
-    bus.on('ui:openPanel', ({ tab }) => this.toggleCoreTab(tab));
+    bus.on(EVT_PANEL_OPEN, ({ tab }) => this.toggleCoreTab(tab));
 
     // Generic close by id (optional)
-    bus.on('ui:closePanel', ({ id }) => this.close(id));
+    bus.on(EVT_PANEL_CLOSE, ({ id }) => this.close(id));
   }
 
   private nextZ() { return ++this.zid; }
