@@ -73,6 +73,8 @@ export class AstroController {
       dataProviderStore.addToActiveCatalogues(catalogue)
     });
 
+    
+
     bus.on('astro.plot.catalogue:show', ({ catalogue, isVisible }) => {
       this.api.hideCatalogue(catalogue, isVisible);
     });

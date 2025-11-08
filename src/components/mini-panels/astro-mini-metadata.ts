@@ -5,9 +5,9 @@ import { bus } from '../../bus';
 import { ColumnType, MetadataColumn } from 'astroviewer';
 
 
-const UCD_RA = 'pos.eq.ra';
-const UCD_DEC = 'pos.eq.dec';
-const UCD_OUTLINE = 'pos.outline;meta.pgsphere';
+// const UCD_RA = 'pos.eq.ra';
+// const UCD_DEC = 'pos.eq.dec';
+// const UCD_OUTLINE = 'pos.outline;meta.pgsphere';
 
 @customElement('astro-mini-metadata')
 export class AstroMiniMetadata extends LitElement {
@@ -31,9 +31,8 @@ export class AstroMiniMetadata extends LitElement {
     }
     main { overflow:auto; padding:10px 12px; }
     .cols {
-      display:grid;
-      grid-template-columns: auto 1fr auto auto auto 2fr;
-      gap:8px;
+      display: grid;
+      gap: 8px;
     }
     .cols > div { padding:2px 0; border-bottom:1px dotted #eee; }
     .muted { color:#888; }
@@ -99,38 +98,28 @@ export class AstroMiniMetadata extends LitElement {
   // helper: is this column "position-ish"?
   private isPosColumn(col: MetadataColumn): boolean {
     return (
-      col.columnType == ColumnType.GEOM_DEC || 
-      col.columnType == ColumnType.GEOM_RA || 
+      col.columnType == ColumnType.GEOM_DEC ||
+      col.columnType == ColumnType.GEOM_RA ||
       col.columnType == ColumnType.GEOM_FOOTPRINT
     );
   }
 
   // checkbox change handler
-  private onCheckboxChange(col: any) {
-    const ucd = col.ucd as string | undefined;
+  private onCheckboxChange(col: MetadataColumn) {
     const name = col.name as string | undefined;
-    if (!ucd || !name) return;
+    if (!name) return;
 
+    // --- CATALOGUE MODE ---
     if (this.model.datasetType === CATALOGUE_TYPE) {
-      // --- CATALOGUE MODE ---
-      if ((col.ucd ?? '').includes(UCD_RA)) {
-        // select this RA, deselect others
+      if (col.columnType == ColumnType.GEOM_RA) {
         this.selectedRa = name;
-      } else if ((col.ucd ?? '').includes(UCD_DEC)) {
+      } else if (col.columnType == ColumnType.GEOM_DEC) {
         this.selectedDec = name;
       }
     } else {
       // --- FOOTPRINT MODE ---
-      if (ucd === UCD_OUTLINE) {
-        // toggle: if already selected, keep it? you said "at least one shall be selected"
-        // so we don't allow unselecting if it is the only one
-        if (this.selectedOutline === name) {
-          // try to unselect → only unselect if there is another outline candidate
-          // but since we allow only one at a time, just do nothing to enforce "at least one"
-          return;
-        } else {
-          this.selectedOutline = name;
-        }
+      if (col.columnType == ColumnType.GEOM_FOOTPRINT) {
+        this.selectedOutline = name;
       }
     }
   }
@@ -141,7 +130,7 @@ export class AstroMiniMetadata extends LitElement {
     const value = select.value;
     this.selectedRa = value === '-' ? undefined : value;
 
-    console.log('[astro-mini-metadata] Dec column changed:', this.selectedRa);
+    console.log('[astro-mini-metadata] RA column changed:', this.selectedRa);
 
     if (!this.selectedRa) return
     if (this.model.datasetType === CATALOGUE_TYPE) {
@@ -172,24 +161,6 @@ export class AstroMiniMetadata extends LitElement {
     }
 
   }
-  
-  private onOutlineSelect(e: Event) {
-    // const select = e.target as HTMLSelectElement;
-    // const value = select.value;
-    // this.selectedOutline = value === '-' ? undefined : value;
-
-    // console.log('[astro-mini-metadata] Outline column changed:', this.selectedOutline);
-
-    // if (!this.selectedOutline) return
-    // if (this.model.datasetType === FOOTPRINTSET_TYPE) {
-    //   const foot = this.model.catOrFoot
-    //   bus.emit('astro.metadata:outlineChanged', {
-    //     catalogue: foot,
-    //     column: this.selectedOutline
-    //   });
-    // }
-
-  }
 
   private onHueSelect(e: Event) {
     const select = e.target as HTMLSelectElement;
@@ -214,7 +185,7 @@ export class AstroMiniMetadata extends LitElement {
     const value = select.value;
     this.selectedShape = value === '-' ? "STANDARD_SIZE" : value;
 
-    console.log('[astro-mini-metadata] Hue column changed:', this.selectedShape);
+    console.log('[astro-mini-metadata] Size column changed:', this.selectedShape);
 
     // if (!this.selectedShape) return
     if (this.model.datasetType === CATALOGUE_TYPE) {
@@ -228,8 +199,12 @@ export class AstroMiniMetadata extends LitElement {
 
   }
 
+  private isIn(list: MetadataColumn[], r: MetadataColumn) {
+    return list?.some(c => c.name === r.name);
+  }
+
   render() {
-    
+
     const glObj = this.model?.catOrFoot?.astroviewerGlObj
     if (!glObj) throw new Error(`No GL object associated to ${this.model.catOrFoot.name}`)
 
@@ -239,7 +214,6 @@ export class AstroMiniMetadata extends LitElement {
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const options: unknown[] = [];
       for (const col of raColumns) {
-        // if (!(col.ucd ?? '').includes(UCD_RA)) continue
         const isSelected = col.name === this.selectedRa;
         options.push(
           html`<option ?selected=${isSelected} value=${col.name}>${col.name}</option>`
@@ -262,7 +236,6 @@ export class AstroMiniMetadata extends LitElement {
       const options: unknown[] = [];
 
       for (const col of decColumns) {
-        // if (!(col.ucd ?? '').includes(UCD_DEC)) continue
         const isSelected = col.name === this.selectedDec;
         options.push(
           html`<option ?selected=${isSelected} value=${col.name}>${col.name}</option>`
@@ -284,7 +257,6 @@ export class AstroMiniMetadata extends LitElement {
     let selectShapeTemplate = html``;
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const options: unknown[] = [];
-
       let hasSelected = false
       for (const col of shapeColumns) {
         const isSelected = col.name === this.selectedShape;
@@ -298,81 +270,50 @@ export class AstroMiniMetadata extends LitElement {
       } else {
         options.push(html`<option value="-">-</option>`)
       }
-      options.reverse()
+      options.unshift(html`<option ?selected=${!hasSelected} value="-">-</option>`);
       selectShapeTemplate = html`
         <label>
           Shape column:
-          <select id='shapeolumn' @change=${this.onShapeSizeSelect}>
-            ${options}
-          </select>
+          <select id="shapeColumn" @change=${this.onShapeSizeSelect}>${options}</select>
         </label>`;
     }
     const selectShapeContainer = html`<div>${selectShapeTemplate}</div>`;
 
-
-    const hueColumns = glObj.metadataManager.hueColumnList || []
+    const hueColumns = glObj.metadataManager.hueColumnList || [];
     let selectHueTemplate = html``;
     if (this.model.datasetType === CATALOGUE_TYPE) {
       const options: unknown[] = [];
-
-      let hasSelected = false
+      let hasSelected = false;
       for (const col of hueColumns) {
-        const isSelected = col.name === this.selectedHue
+        const isSelected = col.name === this.selectedHue;
         if (isSelected) hasSelected = true;
-        options.push(
-          html`<option ?selected=${isSelected} value=${col.name}>${col.name}</option>`
-        );
+        options.push(html`<option ?selected=${isSelected} value=${col.name}>${col.name}</option>`);
       }
-      if (!hasSelected) {
-        options.push(html`<option selected value="-">-</option>`)
-      } else {
-        options.push(html`<option value="-">-</option>`)
-      }
-      options.reverse()
+      options.unshift(html`<option ?selected=${!hasSelected} value="-">-</option>`);
       selectHueTemplate = html`
         <label>
           Hue column:
-          <select id='hueColumn' @change=${this.onHueSelect}>
-            ${options}
-          </select>
+          <select id="hueColumn" @change=${this.onHueSelect}>${options}</select>
         </label>`;
     }
     const selectHueContainer = html`<div>${selectHueTemplate}</div>`;
 
-
-    const outlineColumns = glObj.metadataManager.outlineColumnList || []
-    let selectOutlineTemplate = html``;
-    if (this.model.datasetType === FOOTPRINTSET_TYPE) {
-      const options: unknown[] = [];
-
-      for (const col of outlineColumns) {
-        // if (!(col.ucd ?? '').includes(UCD_DEC)) continue
-        const isSelected = col.name === this.selectedOutline;
-        options.push(
-          html`<option ?selected=${isSelected} value=${col.name}>${col.name}</option>`
-        );
-      }
-      selectOutlineTemplate = html`
-        <label>
-          Pos column:
-          <select id='decColumn' @change=${this.onOutlineSelect}>
-            ${options}
-          </select>
-        </label>`;
-    }
-    const selectOutlineContainer = html`<div>${selectOutlineTemplate}</div>`;
-
-
     const rows = glObj.metadataManager.columns || [];
-    const colsNames = ['name', 'description', 'unit']
-    if (glObj.metadataManager.selectedNameColumn?.details) {
-      // glObj.metadataManager.selectedNameColumn?.details.keys()
-      const extraColsNames = [...glObj.metadataManager.selectedNameColumn?.details].map( ([k,v]) => {return k})
-      colsNames.concat(extraColsNames)
+    let colsNames = ['name', 'description', 'unit'];
+    const selectedNameDetails = glObj.metadataManager.selectedNameColumn?.details;
+    if (selectedNameDetails && selectedNameDetails instanceof Map) {
+      const extraColsNames = [...selectedNameDetails].map(([k, v]) => k);
+      colsNames = colsNames.concat(extraColsNames);
     }
-    
 
 
+    // Build a stable list of detail keys across ALL rows so every row has same # of cells
+    const detailKeys: string[] = Array.from(new Set(
+      rows.flatMap(r => r.details ? [...r.details.keys()] : [])
+    ));
+
+    // Header names: include the first column for the checkbox/pos
+    const headerNames = ['pos', 'name', 'description', 'unit', ...detailKeys];
 
     // [...glObj.metadataManager.selectedNameColumn?.details].map( ([k, v]) => { return k}
     // colsNames.concat(glObj.metadataManager.selectedNameColumn?.details.map(c => {return c.name}))
@@ -395,80 +336,60 @@ export class AstroMiniMetadata extends LitElement {
 
 
       <main>
-        ${this.model?.catOrFoot?.description
+    ${this.model?.catOrFoot?.description
         ? html`<p class="head">${this.model?.catOrFoot.description}</p>`
         : null}
-        ${rows.length === 0
+    ${rows.length === 0
         ? html`<div class="muted">No metadata available.</div>`
         : html`
-              <div class="cols">
+        <div class="cols" style=${`grid-template-columns: repeat(${headerNames.length}, minmax(80px, auto));`}>
+          ${headerNames.map(h => html`<div class="muted">${h}</div>`)}
 
-              <!-- <div class="muted">pos</div>
-                <div class="muted">name</div>
-                <div class="muted">type</div>
-                <div class="muted">unit</div>
-                <div class="muted">ucd</div>
-                <div class="muted">description</div> -->
+          ${rows.map(row => {
+          const showCheckbox = this.isPosColumn(row);
 
-                ${colsNames.map(cn => {
-                  html `<div class="muted">${cn}</div>`
-                })}
+          let checked = false;
+          let disabled = false;
 
-                ${rows.map(row => {
-                    const showCheckbox = this.isPosColumn(row);
+          if (this.model.datasetType === CATALOGUE_TYPE) {
+            if (this.isIn(raColumns, row)) {
+              checked = row.name === this.selectedRa;
+              if (this.selectedRa && row.name !== this.selectedRa) disabled = true;
+            } else if (this.isIn(decColumns, row)) {
+              checked = row.name === this.selectedDec;
+              if (this.selectedDec && row.name !== this.selectedDec) disabled = true;
+            }
+          }
 
-                    // compute checked/disabled state
-                    let checked = false;
-                    let disabled = false;
+          // Helper to read detail value by key, consistently for each row
+          const getDetail = (k: string) =>
+            (row.details && row.details.get(k)) ?? html`<span class="muted">—</span>`;
 
-                    if (this.model.datasetType === CATALOGUE_TYPE) {
-
-                      // if ((col.ucd ?? '').includes(UCD_RA)) {
-                      if (raColumns.includes(row)) {
-                        checked = row.name === this.selectedRa;
-                        // disable all other RA if one is selected and this is not it
-                        if (this.selectedRa && row.name !== this.selectedRa) disabled = true;
-                      // } else if ((col.ucd ?? '').includes(UCD_DEC)) {
-                      } else if (decColumns.includes(row)) {
-                        checked = row.name === this.selectedDec;
-                        if (this.selectedDec && row.name !== this.selectedDec) disabled = true;
-                      }
-                    } else {
-                      // FOOTPRINT
-                      // if (col.ucd === UCD_OUTLINE) {
-                      if (outlineColumns.includes(row)) {
-                        checked = row.name === this.selectedOutline;
-                        if (this.selectedOutline && row.name !== this.selectedOutline) disabled = true;
-                      }
-                    }
-
-                    return html`
-                              <div>
-                                ${showCheckbox ? html`
-                                                <input
-                                                  type="checkbox"
-                                                  ?checked=${checked}
-                                                  ?disabled=${disabled}
-                                                  @change=${() => this.onCheckboxChange(row)}
-                                                />
-                                              `
-                                  : html`<span class="muted">—</span>`
-                                  }
-                              </div>
-                              
-
-                              <div><code>${row.name}</code></div>
-                              <div>${row.description ?? html`<span class="muted">—</span>`}</div>
-                              <div>${row.unit ?? html`<span class="muted">—</span>`}</div>
-                              ${[...row.details].map( ([k, v]) => {
-                                  html `<div>${v ?? html`<span class="muted">—</span>`}</div>`
-
-                              })}
-                            `;
-                  })}
+          return html`
+              <!-- 1) POS/CHECKBOX column -->
+              <div>
+                ${showCheckbox
+              ? html`<input
+                      type="checkbox"
+                      ?checked=${checked}
+                      ?disabled=${disabled}
+                      @change=${() => this.onCheckboxChange(row)}
+                    />`
+              : html`<span class="muted"></span>`}  <!-- render empty, not "—" if you prefer -->
               </div>
-            `}
-      </main>
+
+              <!-- 2) Fixed base columns -->
+              <div><code>${row.name}</code></div>
+              <div>${row.description ?? html`<span class="muted">—</span>`}</div>
+              <div>${row.unit ?? html`<span class="muted">—</span>`}</div>
+
+              <!-- 3) Stable detail columns in the same order for every row -->
+              ${detailKeys.map(k => html`<div>${getDetail(k)}</div>`)}
+            `;
+        })}
+        </div>
+      `}
+  </main>
     `;
   }
 }
