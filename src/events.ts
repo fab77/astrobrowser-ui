@@ -3,7 +3,8 @@
 // Central type-safe event map for PubSub between panels and AstroViewer
 // =========================
 
-import { AstroEntity, AstroState, AstroTaFootprintSetLoadedReqPayload, AstroTaFootprintSetLoadedResPayload, AstroTapAddRepoReqPayload, AstroTapAddRepoResPayload, AstroTapCatalogueLoadedReqPayload, AstroTapCatalogueLoadedResPayload, DataProvider, TabKey, TapRepoLoadedPayload } from "./types";
+import { DataProvider, AstroEntity, AstroState, AstroTapAddRepoReqPayload, AstroTapAddRepoResPayload, AstroTaFootprintSetLoadedReqPayload, AstroTaFootprintSetLoadedResPayload, AstroTapCatalogueLoadedReqPayload, AstroTapCatalogueLoadedResPayload, TapRepoLoadedPayload } from "./global-types";
+
 
 
 export const EVT_ASTRO_META_RA_CHANGED   = 'astro.metadata:raChanged';
@@ -54,10 +55,7 @@ export interface BusEvents {
   [EVT_PLUGIN_ERROR]: { plugin: string; message: string };
 
   // UI intent
-  [EVT_PANEL_OPEN_KEY]: { key: string }; // for sternal plugin
-  [EVT_PANEL_OPEN]: { tab: TabKey }; // for core tabs
-  [EVT_PANEL_CLOSE]: { id: string, key: string }; // opzionale
-
+  
   // Astro commands
   [EVT_ASTRO_GOTO]: { ra: number; dec: number; fov?: number };
   [EVT_ASTRO_TOGGLE_GRID_HEALPIX]: { on?: boolean };

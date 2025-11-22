@@ -1,12 +1,8 @@
-
-
-
-import { AstroState, IAstroViewerAPI, AstroEntity } from './types.js';
-
 import { Point, FoV, AstroViewer, CameraChangedDetail, CatalogueGL, FootprintSetGL, PointCoordinates } from 'astroviewer';
+import { AstroEntity, AstroState, IAstroViewerAPI } from '../../../global-types';
 
 
-export class AstroViewerAdapter implements IAstroViewerAPI {
+export class AstroLibAdapter implements IAstroViewerAPI {
 
     private viewer?: AstroViewer;
     private _initialised = false;
@@ -17,19 +13,19 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
     private lastMouseRADeg: number | undefined;
     private lastMouseDecDeg: number | undefined;
 
-    constructor(canvasDomId: string) {
-        this.init(canvasDomId)
+    constructor(canvasEl: HTMLCanvasElement) {
+        this.init(canvasEl)
         this.lastFov = this.getState().fov
         this.notify();
     }
 
-    private init(canvasDomId: string): void {
+    private init(canvasEl: HTMLCanvasElement): void {
         if (this._initialised) return;
 
         (async () => {
             try {
                 // TODO add canvas id to the constructor of AstroViewer();
-                this.viewer = new AstroViewer(canvasDomId);
+                this.viewer = new AstroViewer(canvasEl);
                 const baseUrl = this.viewer.getDefaultHiPSURL();
                 const hipsUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
                 this.viewer.loadHiPS(hipsUrl);
@@ -41,8 +37,9 @@ export class AstroViewerAdapter implements IAstroViewerAPI {
                 this.lastMouseRADeg = this.viewer?.getCoordinatesFromMouse()?.astroDeg.ra
                 this.lastMouseDecDeg = this.viewer?.getCoordinatesFromMouse()?.astroDeg.dec
 
-                const canvas = document.getElementById(canvasDomId)
-                canvas?.addEventListener('cameraChanged', (ev: Event) => {
+                // const canvas = document.getElementById(canvasDomId)
+                // canvas?.addEventListener('cameraChanged', (ev: Event) => {
+                canvasEl?.addEventListener('cameraChanged', (ev: Event) => {
                     // console.log(ev)
                     const { fovDeg, position, vMatrix, pMatrix, timestamp, centralPoint, mouseHoverPoint } =
                         (ev as CustomEvent<CameraChangedDetail>).detail;

@@ -1,8 +1,4 @@
-// src/astro-controller.ts
-import { addTAPRepo } from './services/repositories/tapRepoService';
-import { bus } from './bus';
-import { dataProviderStore } from './stores/DataProviderStore';
-import type { AstroEntity, DataProvider, IAstroViewerAPI } from './types';
+import { bus } from '../../../bus'
 import {CoordsType, Point, CatalogueGL, FootprintSetGL } from 'astroviewer'
 import {EVT_ASTRO_PLOT_CATALOGUE_REMOVE, 
   EVT_ASTRO_PLOT_CATALOGUE_SHOW, 
@@ -15,15 +11,14 @@ import {EVT_ASTRO_PLOT_CATALOGUE_REMOVE,
   EVT_ASTRO_STATE_GET_res, 
   EVT_ASTRO_PLOT_FOOTPRINTSET_req, 
   EVT_ASTRO_PLOT_FOOTPRINTSET_res, 
-  EVT_TAP_ADDREPO_req, 
-  EVT_TAP_ADDREPO_res, 
-  EVT_TAP_REPO_LOADED,
   EVT_ASTRO_PLOT_CATALOGUE_res,
   EVT_ASTRO_PLOT_CATALOGUE_req,
   EVT_ASTRO_READY,
-  EVT_ASTRO_STATE_CHANGED} from './events'
+  EVT_ASTRO_STATE_CHANGED} from '../../../events'
+import { AstroEntity, DataProvider, IAstroViewerAPI } from '../../../global-types';
+import { dataProviderStore } from '../../../stores/DataProviderStore';
 
-export class AstroController {
+export class AstroLibController {
   constructor(private api: IAstroViewerAPI) { }
 
   
@@ -123,25 +118,6 @@ export class AstroController {
         bus.emit(EVT_ASTRO_PLOT_FOOTPRINTSET_res, { cid, ok: false, error: e?.message ?? String(e) });
       }
     });
-
-    // === TAP integration (bus-only) ===
-    bus.on(EVT_TAP_ADDREPO_req, async ({ cid, url }) => {
-      try {
-        // const dataProvider = await this.api.addTAPRepo(url);
-        const dataProvider = await addTAPRepo(url);
-        const payload: { dataProvider: DataProvider } = {
-          dataProvider: dataProvider
-        };
-        // reply to the requester
-        bus.emit(EVT_TAP_ADDREPO_res, { cid, ok: true, payload });
-
-        // broadcast availability app-wide
-        bus.emit(EVT_TAP_REPO_LOADED, { url, ...payload });
-      } catch (e: any) {
-        bus.emit(EVT_TAP_ADDREPO_res, { cid, ok: false, error: e?.message ?? String(e) });
-      }
-    });
-
 
     // Broadcast
     this.api.onStateChanged?.((state) => bus.emit(EVT_ASTRO_STATE_CHANGED, { state }));

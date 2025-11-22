@@ -1,4 +1,5 @@
-import type { AstroEntity, DataProvider } from 'src/types';
+import { DataProvider, AstroEntity } from "../global-types";
+
 
 type Listener = (p: DataProvider | undefined) => void;
 
